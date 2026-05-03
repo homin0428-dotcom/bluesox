@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>블루삭스 야구단</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06090f;--card:#0f1828;--card2:#152236;
+  --gold:#f0b429;--gold-dim:#b8882a;
+  --blue:#1a56db;--royal:#1e3a8a;
+  --green:#22c55e;--red:#ef4444;
+  --text:#e2e8f0;--muted:#94a3b8;--border:#1e3a5f;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;}
+a{text-decoration:none;color:inherit;}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(6,9,15,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:14px;height:66px;}
+.nav-logo{display:flex;align-items:center;gap:10px;cursor:pointer;}
+.nav-title{font-family:'Bebas Neue';font-size:1.5rem;color:var(--gold);letter-spacing:2px;}
+.nav-sub{font-size:.68rem;color:var(--muted);letter-spacing:1px;}
+.nav-spacer{flex:1;}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#6b7280;display:inline-block;transition:background .3s;}
+.sync-dot.online{background:var(--green);}
+.sync-dot.syncing{background:var(--gold);animation:pulse .8s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.sync-label{font-size:.72rem;color:var(--muted);}
+.btn{padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-family:'Noto Sans KR';font-size:.875rem;font-weight:500;transition:all .2s;}
+.btn-gold{background:var(--gold);color:#06090f;}
+.btn-gold:hover{background:#d4a017;}
+.btn-outline{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+.btn-outline:hover{background:rgba(240,180,41,.1);}
+.btn-sm{padding:5px 12px;font-size:.8rem;}
+.btn-danger{background:#7f1d1d;color:#fca5a5;border:1px solid #ef4444;}
+.btn-danger:hover{background:#991b1b;}
+
+.page{display:none;padding:24px 20px;max-width:920px;margin:0 auto;}
+.page.active{display:block;}
+
+/* SETUP */
+#setup-overlay{position:fixed;inset:0;background:rgba(6,9,15,.97);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+.setup-box{background:var(--card);border:1px solid var(--gold);border-radius:16px;padding:32px;max-width:560px;width:100%;}
+.setup-title{font-family:'Bebas Neue';font-size:1.8rem;color:var(--gold);letter-spacing:2px;margin-bottom:8px;}
+.setup-sub{color:var(--muted);font-size:.85rem;margin-bottom:24px;line-height:1.6;}
+.setup-step{background:#06090f;border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px;}
+.setup-step-title{font-weight:700;font-size:.85rem;margin-bottom:5px;color:var(--gold);}
+.setup-step p{font-size:.8rem;color:var(--muted);line-height:1.6;}
+.setup-step a{color:#60a5fa;}
+.config-input{width:100%;background:#06090f;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:12px;font-family:monospace;font-size:.78rem;resize:vertical;min-height:150px;margin-top:12px;}
+.config-input:focus{outline:none;border-color:var(--gold);}
+.setup-error{color:var(--red);font-size:.8rem;margin-top:8px;display:none;}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,#060d1e 0%,#0f2248 40%,#162f5e 60%,#060d1e 100%);border:1px solid var(--border);border-radius:16px;padding:28px;display:flex;align-items:center;gap:32px;margin-bottom:20px;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 65% 50%,rgba(240,180,41,.08) 0%,transparent 65%);}
+.hero::after{content:'';position:absolute;top:-1px;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.hero-logo{flex-shrink:0;filter:drop-shadow(0 0 16px rgba(240,180,41,.35));}
+.hero-info{flex:1;z-index:1;}
+.hero-team{font-family:'Bebas Neue';font-size:2.4rem;color:var(--gold);letter-spacing:4px;line-height:1;}
+.hero-sub{color:var(--muted);font-size:.82rem;margin-top:4px;margin-bottom:18px;letter-spacing:1px;}
+.stats-grid{display:flex;gap:10px;flex-wrap:wrap;}
+.stat-box{background:rgba(0,0,0,.35);border:1px solid var(--border);border-radius:10px;padding:10px 16px;min-width:76px;text-align:center;transition:border-color .2s;}
+.stat-val{font-family:'Bebas Neue';font-size:1.9rem;color:var(--gold);line-height:1;}
+.stat-lbl{font-size:.67rem;color:var(--muted);margin-top:3px;letter-spacing:.5px;}
+
+/* FILTER BAR */
+.filter-bar{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:16px;}
+.filter-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.filter-label{font-size:.75rem;color:var(--muted);font-weight:600;white-space:nowrap;min-width:36px;}
+.filter-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.chip{padding:5px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:.78rem;font-family:'Noto Sans KR';transition:all .2s;white-space:nowrap;}
+.chip:hover{border-color:var(--gold);color:var(--gold);}
+.chip.active{background:var(--gold);color:#06090f;border-color:var(--gold);font-weight:700;}
+.filter-divider{width:1px;height:24px;background:var(--border);margin:0 4px;}
+.filter-result{font-size:.78rem;color:var(--muted);margin-left:auto;white-space:nowrap;}
+.filter-result b{color:var(--gold);}
+
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.section-title{font-family:'Bebas Neue';font-size:1.4rem;color:var(--gold);letter-spacing:2px;}
+
+/* GAME CARDS */
+.game-card{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;display:flex;overflow:hidden;cursor:pointer;transition:transform .15s,border-color .15s,box-shadow .15s;}
+.game-card:hover{transform:translateY(-2px);border-color:var(--gold);box-shadow:0 4px 20px rgba(240,180,41,.1);}
+.card-side{width:5px;flex-shrink:0;}
+.card-side.win{background:var(--green);}
+.card-side.loss{background:var(--red);}
+.card-body{padding:13px 16px;flex:1;}
+.card-row1{display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap;}
+.card-date{font-size:.78rem;color:var(--muted);}
+.card-badge{font-size:.68rem;color:var(--muted);background:#0a1220;border:1px solid var(--border);padding:2px 7px;border-radius:4px;}
+.card-vs{font-size:.92rem;font-weight:700;}
+.card-score{font-family:'Bebas Neue';font-size:1.4rem;color:var(--gold);margin-left:auto;}
+.tag{padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:700;}
+.tag-win{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+.tag-loss{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.card-meta{font-size:.76rem;color:var(--muted);}
+.card-meta span{margin-right:10px;}
+.card-meta b{color:var(--text);}
+.empty-state{text-align:center;padding:50px 20px;color:var(--muted);}
+.empty-state .icon{font-size:2.5rem;margin-bottom:10px;}
+
+/* FORM */
+.form-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px;}
+.form-title{font-family:'Bebas Neue';font-size:1.3rem;color:var(--gold);letter-spacing:2px;margin-bottom:18px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.full{grid-column:1/-1;}
+label{font-size:.78rem;color:var(--muted);font-weight:500;}
+input,select,textarea{background:#0a1220;border:1px solid var(--border);color:var(--text);border-radius:6px;padding:9px 12px;font-family:'Noto Sans KR';font-size:.875rem;transition:border-color .2s;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);}
+select option{background:#0a1220;}
+textarea{resize:vertical;min-height:70px;}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;}
+.tab-btn{padding:10px 20px;background:none;border:none;color:var(--muted);cursor:pointer;font-family:'Noto Sans KR';font-size:.875rem;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* INNING */
+.inning-ctrl{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
+.inning-ctrl select{padding:6px 10px;width:auto;}
+.score-table{width:100%;border-collapse:collapse;font-size:.85rem;}
+.score-table th{background:#0a1220;color:var(--muted);padding:8px 10px;text-align:center;border:1px solid var(--border);font-size:.75rem;}
+.score-table td{border:1px solid var(--border);text-align:center;padding:4px;}
+.score-table td input{border:none;background:transparent;text-align:center;color:var(--text);width:100%;padding:4px;font-size:.85rem;}
+.score-table td input:focus{outline:none;background:rgba(240,180,41,.08);}
+.total-cell{background:#0a1220;font-weight:700;}
+.total-cell.win-score{color:var(--green);}
+.total-cell.loss-score{color:var(--red);}
+.result-banner{text-align:center;margin-top:12px;padding:10px;border-radius:8px;font-family:'Bebas Neue';font-size:1.4rem;letter-spacing:2px;}
+.result-banner.win{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.3);}
+.result-banner.loss{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+
+/* BATTER / PITCHER TABLES */
+.batter-wrap,.pitcher-wrap{overflow-x:auto;}
+.batter-table{min-width:900px;width:100%;border-collapse:collapse;font-size:.78rem;}
+.batter-table th{background:#0a1220;color:var(--muted);padding:7px 6px;border:1px solid var(--border);text-align:center;white-space:nowrap;font-size:.72rem;}
+.batter-table td{border:1px solid var(--border);padding:3px 2px;text-align:center;}
+.batter-table td input,.batter-table td select{border:none;background:transparent;color:var(--text);text-align:center;width:100%;padding:3px;font-size:.78rem;min-width:30px;}
+.batter-table td input:focus,.batter-table td select:focus{outline:none;background:rgba(240,180,41,.08);}
+.pitcher-table{min-width:800px;width:100%;border-collapse:collapse;font-size:.78rem;}
+.pitcher-table th{background:#0a1220;color:var(--muted);padding:7px 6px;border:1px solid var(--border);text-align:center;font-size:.72rem;white-space:nowrap;}
+.pitcher-table td{border:1px solid var(--border);padding:3px 2px;text-align:center;}
+.pitcher-table td input,.pitcher-table td select{border:none;background:transparent;color:var(--text);text-align:center;width:100%;padding:3px;font-size:.78rem;min-width:40px;}
+.stat-auto{font-weight:700;}
+.stat-green{color:var(--green);}
+.stat-gold{color:var(--gold);}
+.stat-red{color:var(--red);}
+.stat-normal{color:var(--text);}
+.add-row-btn{margin-top:10px;}
+
+/* DETAIL */
+.scoreboard-wrap{overflow-x:auto;}
+.view-table{width:100%;border-collapse:collapse;font-size:.82rem;}
+.view-table th{background:#0a1220;color:var(--muted);padding:8px;border:1px solid var(--border);text-align:center;font-size:.75rem;}
+.view-table td{border:1px solid var(--border);padding:7px 8px;text-align:center;}
+.view-table tr:hover td{background:rgba(240,180,41,.04);}
+.table-section{margin-bottom:28px;}
+.table-section h3{font-family:'Bebas Neue';font-size:1.1rem;color:var(--gold);letter-spacing:1px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+
+/* LOADING / TOAST */
+.loading{text-align:center;padding:40px;color:var(--muted);}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+#toast{position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:.85rem;z-index:300;transform:translateY(80px);opacity:0;transition:all .3s;}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast.success{border-color:var(--green);color:var(--green);}
+#toast.error{border-color:var(--red);color:var(--red);}
+
+@media(max-width:640px){
+  .hero{flex-direction:column;text-align:center;gap:20px;}
+  .stats-grid{justify-content:center;}
+  .form-grid{grid-template-columns:1fr;}
+  nav{padding:0 12px;gap:8px;}
+  .page{padding:14px 12px;}
+  .filter-row{gap:8px;}
+  .filter-result{width:100%;margin-left:0;}
+}
+</style>
+</head>
+<body>
+
+<!-- SETUP OVERLAY -->
+<div id="setup-overlay">
+  <div class="setup-box">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+      <svg width="54" height="54" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <path id="tArcS" d="M37,60 A23,23 0 0,1 83,60"/>
+    <path id="bArcS" d="M35,62 A26,26 0 0,0 85,62"/>
+  </defs>
+  <polygon points="60,3 73,42 114,42 82,67 94,106 60,83 26,106 38,67 6,42 47,42" fill="#07111f" stroke="#f0b429" stroke-width="3.5"/>
+  <polygon points="60,11 71.5,44 108,44 79,67 89.5,103 60,81 30.5,103 41,67 12,44 48.5,44" fill="none" stroke="#f0b429" stroke-width="1" opacity="0.55"/>
+  <circle cx="60" cy="5" r="2.2" fill="#f0b429"/>
+  <circle cx="112" cy="43" r="2.2" fill="#f0b429"/>
+  <circle cx="93" cy="104" r="2.2" fill="#f0b429"/>
+  <circle cx="27" cy="104" r="2.2" fill="#f0b429"/>
+  <circle cx="8" cy="43" r="2.2" fill="#f0b429"/>
+  <circle cx="60" cy="60" r="27" fill="white" stroke="#e8e8e8" stroke-width="0.5"/>
+  <path d="M47,46 C40,60 40,60 47,74" stroke="#cc2222" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <line x1="47" y1="49.5" x2="53" y2="48.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="46" y1="54.5" x2="52" y2="54.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="46" y1="59.5" x2="52" y2="59.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="46" y1="64.5" x2="52" y2="64.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="47" y1="69.5" x2="53" y2="70.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M73,46 C80,60 80,60 73,74" stroke="#cc2222" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <line x1="73" y1="49.5" x2="67" y2="48.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="74" y1="54.5" x2="68" y2="54.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="74" y1="59.5" x2="68" y2="59.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="74" y1="64.5" x2="68" y2="64.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="73" y1="69.5" x2="67" y2="70.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <text font-family="Arial,sans-serif" font-size="7" font-weight="800" fill="#0d1f4e" letter-spacing="0.8">
+    <textPath href="#tArcS" startOffset="50%" text-anchor="middle">SINCE 2012</textPath>
+  </text>
+  <text x="60" y="66" text-anchor="middle" font-family="Georgia,serif" font-size="13" font-weight="900" font-style="italic" fill="#f0b429" stroke="#c88a10" stroke-width="0.6">Blue Sox</text>
+  <text font-family="Arial,sans-serif" font-size="6.5" font-weight="700" fill="#0d1f4e" letter-spacing="0.5">
+    <textPath href="#bArcS" startOffset="50%" text-anchor="middle">BASEBALL CLUB</textPath>
+  </text>
+  <text x="24" y="56" text-anchor="middle" font-family="Arial" font-size="6" font-weight="800" fill="#f0b429" transform="rotate(-18,24,56)">YND</text>
+</svg>
+      <div>
+        <div class="setup-title">Firebase 연결 설정</div>
+        <div style="color:var(--muted);font-size:.8rem;">블루삭스 팀 실시간 데이터 공유</div>
+      </div>
+    </div>
+    <div class="setup-sub">팀 전체가 같은 데이터를 실시간으로 공유하려면 Firebase 설정이 필요합니다.</div>
+    <div class="setup-step"><div class="setup-step-title">① Firebase 프로젝트 생성</div>
+      <p><a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → 프로젝트 추가 → 이름 입력 → 생성</p></div>
+    <div class="setup-step"><div class="setup-step-title">② Firestore 데이터베이스 활성화</div>
+      <p>좌측 메뉴 → Firestore Database → 데이터베이스 만들기 → 테스트 모드 → asia-northeast3(서울) → 완료</p></div>
+    <div class="setup-step"><div class="setup-step-title">③ 웹 앱 등록 후 설정 코드 붙여넣기</div>
+      <p>프로젝트 설정(⚙️) → 내 앱 → 웹 앱 추가(&lt;/&gt;) → firebaseConfig 객체 전체 복사</p></div>
+    <textarea class="config-input" id="config-input" placeholder='const firebaseConfig = {
+  apiKey: "AIza...",
+  authDomain: "...",
+  projectId: "...",
+  storageBucket: "...",
+  messagingSenderId: "...",
+  appId: "..."
+};'></textarea>
+    <div class="setup-error" id="setup-error"></div>
+    <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-gold" onclick="applyConfig()">🔥 연결하기</button>
+    </div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:.73rem;color:var(--muted);line-height:1.7;">
+      💡 설정 후 이 HTML 파일을 Netlify에 배포하면 팀원 모두 같은 URL로 실시간 공유됩니다.
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo" onclick="showPage('home')">
+    <svg width="44" height="44" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <path id="tArcN" d="M37,60 A23,23 0 0,1 83,60"/>
+    <path id="bArcN" d="M35,62 A26,26 0 0,0 85,62"/>
+  </defs>
+  <polygon points="60,3 73,42 114,42 82,67 94,106 60,83 26,106 38,67 6,42 47,42" fill="#07111f" stroke="#f0b429" stroke-width="3.5"/>
+  <polygon points="60,11 71.5,44 108,44 79,67 89.5,103 60,81 30.5,103 41,67 12,44 48.5,44" fill="none" stroke="#f0b429" stroke-width="1" opacity="0.55"/>
+  <circle cx="60" cy="5" r="2.2" fill="#f0b429"/>
+  <circle cx="112" cy="43" r="2.2" fill="#f0b429"/>
+  <circle cx="93" cy="104" r="2.2" fill="#f0b429"/>
+  <circle cx="27" cy="104" r="2.2" fill="#f0b429"/>
+  <circle cx="8" cy="43" r="2.2" fill="#f0b429"/>
+  <circle cx="60" cy="60" r="27" fill="white" stroke="#e8e8e8" stroke-width="0.5"/>
+  <path d="M47,46 C40,60 40,60 47,74" stroke="#cc2222" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <line x1="47" y1="49.5" x2="53" y2="48.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="46" y1="54.5" x2="52" y2="54.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="46" y1="59.5" x2="52" y2="59.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="46" y1="64.5" x2="52" y2="64.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="47" y1="69.5" x2="53" y2="70.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M73,46 C80,60 80,60 73,74" stroke="#cc2222" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <line x1="73" y1="49.5" x2="67" y2="48.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="74" y1="54.5" x2="68" y2="54.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="74" y1="59.5" x2="68" y2="59.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="74" y1="64.5" x2="68" y2="64.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="73" y1="69.5" x2="67" y2="70.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <text font-family="Arial,sans-serif" font-size="7" font-weight="800" fill="#0d1f4e" letter-spacing="0.8">
+    <textPath href="#tArcN" startOffset="50%" text-anchor="middle">SINCE 2012</textPath>
+  </text>
+  <text x="60" y="66" text-anchor="middle" font-family="Georgia,serif" font-size="13" font-weight="900" font-style="italic" fill="#f0b429" stroke="#c88a10" stroke-width="0.6">Blue Sox</text>
+  <text font-family="Arial,sans-serif" font-size="6.5" font-weight="700" fill="#0d1f4e" letter-spacing="0.5">
+    <textPath href="#bArcN" startOffset="50%" text-anchor="middle">BASEBALL CLUB</textPath>
+  </text>
+  <text x="24" y="56" text-anchor="middle" font-family="Arial" font-size="6" font-weight="800" fill="#f0b429" transform="rotate(-18,24,56)">YND</text>
+</svg>
+    <div><div class="nav-title">BLUE SOX</div><div class="nav-sub">BASEBALL CLUB</div></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="sync-dot" id="sync-dot"></span>
+    <span class="sync-label" id="sync-label">연결 안됨</span>
+  </div>
+  <div class="nav-spacer"></div>
+  <button class="btn btn-outline btn-sm" onclick="resetConfig()" title="Firebase 설정 변경">⚙️</button>
+  <button class="btn btn-gold btn-sm" onclick="showPage('form');initForm()">+ 새 경기</button>
+</nav>
+
+<!-- HOME -->
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div class="hero-logo"><svg width="115" height="115" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <path id="tArcH" d="M37,60 A23,23 0 0,1 83,60"/>
+    <path id="bArcH" d="M35,62 A26,26 0 0,0 85,62"/>
+  </defs>
+  <polygon points="60,3 73,42 114,42 82,67 94,106 60,83 26,106 38,67 6,42 47,42" fill="#07111f" stroke="#f0b429" stroke-width="3.5"/>
+  <polygon points="60,11 71.5,44 108,44 79,67 89.5,103 60,81 30.5,103 41,67 12,44 48.5,44" fill="none" stroke="#f0b429" stroke-width="1" opacity="0.55"/>
+  <circle cx="60" cy="5" r="2.2" fill="#f0b429"/>
+  <circle cx="112" cy="43" r="2.2" fill="#f0b429"/>
+  <circle cx="93" cy="104" r="2.2" fill="#f0b429"/>
+  <circle cx="27" cy="104" r="2.2" fill="#f0b429"/>
+  <circle cx="8" cy="43" r="2.2" fill="#f0b429"/>
+  <circle cx="60" cy="60" r="27" fill="white" stroke="#e8e8e8" stroke-width="0.5"/>
+  <path d="M47,46 C40,60 40,60 47,74" stroke="#cc2222" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <line x1="47" y1="49.5" x2="53" y2="48.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="46" y1="54.5" x2="52" y2="54.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="46" y1="59.5" x2="52" y2="59.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="46" y1="64.5" x2="52" y2="64.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="47" y1="69.5" x2="53" y2="70.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M73,46 C80,60 80,60 73,74" stroke="#cc2222" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <line x1="73" y1="49.5" x2="67" y2="48.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="74" y1="54.5" x2="68" y2="54.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="74" y1="59.5" x2="68" y2="59.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="74" y1="64.5" x2="68" y2="64.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="73" y1="69.5" x2="67" y2="70.5" stroke="#cc2222" stroke-width="1.3" stroke-linecap="round"/>
+  <text font-family="Arial,sans-serif" font-size="7" font-weight="800" fill="#0d1f4e" letter-spacing="0.8">
+    <textPath href="#tArcH" startOffset="50%" text-anchor="middle">SINCE 2012</textPath>
+  </text>
+  <text x="60" y="66" text-anchor="middle" font-family="Georgia,serif" font-size="13" font-weight="900" font-style="italic" fill="#f0b429" stroke="#c88a10" stroke-width="0.6">Blue Sox</text>
+  <text font-family="Arial,sans-serif" font-size="6.5" font-weight="700" fill="#0d1f4e" letter-spacing="0.5">
+    <textPath href="#bArcH" startOffset="50%" text-anchor="middle">BASEBALL CLUB</textPath>
+  </text>
+  <text x="24" y="56" text-anchor="middle" font-family="Arial" font-size="6" font-weight="800" fill="#f0b429" transform="rotate(-18,24,56)">YND</text>
+</svg></div>
+    <div class="hero-info">
+      <div class="hero-team">블루삭스</div>
+      <div class="hero-sub">Blue Sox Baseball Club &nbsp;·&nbsp; Since 2012</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-val" id="s-g">-</div><div class="stat-lbl">경기</div></div>
+        <div class="stat-box"><div class="stat-val" id="s-w" style="color:var(--green)">-</div><div class="stat-lbl">승</div></div>
+        <div class="stat-box"><div class="stat-val" id="s-l" style="color:var(--red)">-</div><div class="stat-lbl">패</div></div>
+        <div class="stat-box"><div class="stat-val" id="s-pct">-</div><div class="stat-lbl">승률</div></div>
+        <div class="stat-box"><div class="stat-val" id="s-avg">-</div><div class="stat-lbl">팀타율</div></div>
+        <div class="stat-box"><div class="stat-val" id="s-era">-</div><div class="stat-lbl">팀ERA</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <div class="filter-row" style="margin-bottom:10px">
+      <span class="filter-label">시즌</span>
+      <div class="filter-chips" id="season-chips"></div>
+    </div>
+    <div class="filter-row">
+      <span class="filter-label">리그</span>
+      <div class="filter-chips" id="league-chips"></div>
+      <span class="filter-result" id="filter-result"></span>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title">⚾ 경기 기록</div>
+  </div>
+  <div id="game-list"><div class="loading"><div class="spinner"></div>데이터 불러오는 중...</div></div>
+</div>
+
+<!-- FORM -->
+<div id="page-form" class="page">
+  <div class="form-card">
+    <div class="form-title">📋 경기 정보</div>
+    <div class="form-grid">
+      <div class="form-group"><label>날짜</label><input type="date" id="f-date"></div>
+      <div class="form-group"><label>장소</label><input type="text" id="f-place" placeholder="홈구장, 원정 등"></div>
+      <div class="form-group"><label>시즌</label>
+        <input type="text" id="f-season" placeholder="예: 2025, 2025 상반기"></div>
+      <div class="form-group"><label>리그</label>
+        <input type="text" id="f-league" placeholder="예: 정규리그, 플레이오프, 친선"></div>
+      <div class="form-group"><label>우리팀</label><input type="text" id="f-us" value="블루삭스"></div>
+      <div class="form-group"><label>상대팀</label><input type="text" id="f-them" placeholder="상대팀명"></div>
+      <div class="form-group full"><label>메모</label><textarea id="f-memo" placeholder="경기 메모"></textarea></div>
+    </div>
+  </div>
+  <div class="form-card">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('inning',this)">이닝 점수</button>
+      <button class="tab-btn" onclick="switchTab('batter',this)">타자 기록</button>
+      <button class="tab-btn" onclick="switchTab('pitcher',this)">투수 기록</button>
+    </div>
+    <div class="tab-panel active" id="tab-inning">
+      <div class="inning-ctrl">
+        <label>이닝 수</label>
+        <select id="inning-count" onchange="buildInningTable()"><option value="7">7이닝</option><option value="9">9이닝</option></select>
+      </div>
+      <div class="scoreboard-wrap"><table class="score-table" id="inning-table"></table></div>
+      <div id="result-banner"></div>
+    </div>
+    <div class="tab-panel" id="tab-batter">
+      <div class="batter-wrap">
+        <table class="batter-table">
+          <thead><tr><th>타순</th><th>이름</th><th>POS</th><th>PA</th><th>AB</th><th>H</th><th>2B</th><th>3B</th><th>HR</th><th>RBI</th><th>R</th><th>BB</th><th>K</th><th>SB</th><th>AVG</th><th>OBP</th><th>SLG</th><th>OPS</th><th></th></tr></thead>
+          <tbody id="batter-body"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-outline btn-sm add-row-btn" onclick="addBatterRow()">+ 타자 추가</button>
+    </div>
+    <div class="tab-panel" id="tab-pitcher">
+      <div class="pitcher-wrap">
+        <table class="pitcher-table">
+          <thead><tr><th>이름</th><th>결과</th><th>IP</th><th>BF</th><th>H</th><th>HR</th><th>BB</th><th>K</th><th>R</th><th>ER</th><th>NP</th><th>ERA</th><th>WHIP</th><th>K/9</th><th></th></tr></thead>
+          <tbody id="pitcher-body"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-outline btn-sm add-row-btn" onclick="addPitcherRow()">+ 투수 추가</button>
+    </div>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-outline" onclick="showPage('home')">취소</button>
+    <button class="btn btn-gold" id="save-btn" onclick="saveGame()">💾 저장</button>
+  </div>
+</div>
+
+<!-- DETAIL -->
+<div id="page-detail" class="page"><div id="detail-content"></div></div>
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const CONFIG_KEY='bluesox_firebase_config';
+let db=null,unsubscribe=null,editingId=null,games=[];
+let selSeason='전체',selLeague='전체';
+
+// ===== FIREBASE =====
+function applyConfig(){
+  const raw=document.getElementById('config-input').value.trim();
+  const err=document.getElementById('setup-error');err.style.display='none';
+  try{
+    const m=raw.match(/\{[\s\S]*\}/);
+    if(!m) throw new Error('firebaseConfig 객체를 찾을 수 없습니다.');
+    const cfg=eval('('+m[0]+')');
+    if(!cfg.apiKey||!cfg.projectId) throw new Error('apiKey 또는 projectId가 없습니다.');
+    localStorage.setItem(CONFIG_KEY,JSON.stringify(cfg));initFirebase(cfg);
+  }catch(e){err.textContent='❌ '+e.message;err.style.display='block';}
+}
+function resetConfig(){if(!confirm('Firebase 설정을 초기화할까요?'))return;localStorage.removeItem(CONFIG_KEY);location.reload();}
+function initFirebase(cfg){
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    db=firebase.firestore();
+    document.getElementById('setup-overlay').style.display='none';
+    setSyncStatus('syncing','연결 중...');startListener();
+  }catch(e){showToast('Firebase 초기화 실패: '+e.message,'error');}
+}
+function startListener(){
+  if(unsubscribe) unsubscribe();
+  unsubscribe=db.collection('games').orderBy('date','desc').onSnapshot(snap=>{
+    games=snap.docs.map(d=>({id:d.id,...d.data()}));
+    setSyncStatus('online','실시간 연결됨');renderHome();
+  },err=>{setSyncStatus('','연결 오류');showToast('오류: '+err.message,'error');});
+}
+function setSyncStatus(s,l){document.getElementById('sync-dot').className='sync-dot '+s;document.getElementById('sync-label').textContent=l;}
+
+// ===== PAGES =====
+function showPage(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+n).classList.add('active');
+  if(n==='home') renderHome();
+}
+
+// ===== FILTER =====
+function getSeasons(){
+  const s=new Set(['전체']);
+  games.forEach(g=>{if(g.season)s.add(g.season);});
+  return [...s];
+}
+function getLeagues(){
+  const s=new Set(['전체']);
+  games.forEach(g=>{
+    if(selSeason==='전체'||g.season===selSeason){if(g.league)s.add(g.league);}
+  });
+  return [...s];
+}
+function getFiltered(){
+  return games.filter(g=>{
+    const sOk=selSeason==='전체'||g.season===selSeason;
+    const lOk=selLeague==='전체'||g.league===selLeague;
+    return sOk&&lOk;
+  });
+}
+function buildChips(){
+  const seasons=getSeasons();
+  const leagues=getLeagues();
+  // validate current selections
+  if(!seasons.includes(selSeason)) selSeason='전체';
+  if(!leagues.includes(selLeague)) selLeague='전체';
+
+  document.getElementById('season-chips').innerHTML=seasons.map(s=>
+    `<button class="chip ${s===selSeason?'active':''}" onclick="selectSeason('${s}')">${s}</button>`
+  ).join('');
+  document.getElementById('league-chips').innerHTML=leagues.map(l=>
+    `<button class="chip ${l===selLeague?'active':''}" onclick="selectLeague('${l}')">${l}</button>`
+  ).join('');
+}
+function selectSeason(s){
+  selSeason=s; selLeague='전체'; renderHome();
+}
+function selectLeague(l){
+  selLeague=l; renderHome();
+}
+
+// ===== HOME =====
+function renderHome(){
+  buildChips();
+  const filtered=getFiltered();
+  let g=0,w=0,l=0,ab=0,h=0,er=0,ip=0;
+  filtered.forEach(x=>{
+    const us=(x.inningScore?.us||[]).reduce((a,b)=>a+(+b||0),0);
+    const th=(x.inningScore?.them||[]).reduce((a,b)=>a+(+b||0),0);
+    if((x.inningScore?.us||[]).length){g++;if(us>th)w++;else l++;}
+    (x.batters||[]).forEach(b=>{ab+=(+b.ab||0);h+=(+b.h||0);});
+    (x.pitchers||[]).forEach(p=>{er+=(+p.er||0);ip+=parseIP(p.ip||'0');});
+  });
+  const pct=g>0?((w/g)*100).toFixed(0)+'%':'-%';
+  document.getElementById('s-g').textContent=g;
+  document.getElementById('s-w').textContent=w;
+  document.getElementById('s-l').textContent=l;
+  document.getElementById('s-pct').textContent=pct;
+  document.getElementById('s-avg').textContent=ab>0?'.'+String(Math.round(h/ab*1000)).padStart(3,'0'):'.000';
+  document.getElementById('s-era').textContent=ip>0?(er/ip*9).toFixed(2):'0.00';
+
+  // filter result label
+  let label='';
+  if(selSeason!=='전체') label+=selSeason;
+  if(selLeague!=='전체') label+=(label?' · ':'')+selLeague;
+  document.getElementById('filter-result').innerHTML=label?`<b>${label}</b> · ${g}경기 ${w}승 ${l}패`:`전체 ${g}경기 ${w}승 ${l}패`;
+
+  const el=document.getElementById('game-list');
+  if(!filtered.length){
+    el.innerHTML='<div class="empty-state"><div class="icon">⚾</div><p>'+(games.length?'해당 조건의 경기가 없습니다.':'아직 경기 기록이 없습니다. <b>+ 새 경기</b>로 추가해보세요!')+'</p></div>';
+    return;
+  }
+  el.innerHTML=filtered.map(x=>{
+    const us=(x.inningScore?.us||[]).reduce((a,b)=>a+(+b||0),0);
+    const th=(x.inningScore?.them||[]).reduce((a,b)=>a+(+b||0),0);
+    const played=(x.inningScore?.us||[]).length>0,win=us>th;
+    const tag=played?`<span class="tag ${win?'tag-win':'tag-loss'}">${win?'승':'패'}</span>`:'';
+    const hrs=(x.batters||[]).filter(b=>+b.hr>0).map(b=>`${b.name}(${b.hr}HR)`).join(' ');
+    const wp=(x.pitchers||[]).find(p=>p.result==='승')||x.pitchers?.[0];
+    const badges=[x.season,x.league].filter(Boolean).map(v=>`<span class="card-badge">${v}</span>`).join('');
+    return `<div class="game-card" onclick="showDetail('${x.id}')">
+      <div class="card-side ${played?(win?'win':'loss'):''}"></div>
+      <div class="card-body">
+        <div class="card-row1">
+          <span class="card-date">${x.date||''}</span>${badges}${tag}
+          <span class="card-vs">vs ${x.them||'미정'}</span>
+          ${played?`<span class="card-score">${us} - ${th}</span>`:''}
+          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();editGame('${x.id}')">수정</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteGame('${x.id}')">삭제</button>
+        </div>
+        <div class="card-meta">
+          ${x.place?`<span>📍 <b>${x.place}</b></span>`:''}
+          ${hrs?`<span>💣 <b>${hrs}</b></span>`:''}
+          ${wp?`<span>⚾ <b>${wp.name}</b> ${wp.result||''}</span>`:''}
+        </div>
+      </div></div>`;
+  }).join('');
+}
+
+async function deleteGame(id){
+  if(!confirm('이 경기를 삭제할까요?'))return;
+  try{setSyncStatus('syncing','저장 중...');await db.collection('games').doc(id).delete();showToast('삭제되었습니다.','success');}
+  catch(e){showToast('삭제 실패: '+e.message,'error');}
+}
+
+// ===== FORM =====
+function initForm(id=null){
+  editingId=id;
+  const x=id?games.find(g=>g.id===id):{};
+  document.getElementById('f-date').value=x?.date||new Date().toISOString().slice(0,10);
+  document.getElementById('f-place').value=x?.place||'';
+  document.getElementById('f-season').value=x?.season||'';
+  document.getElementById('f-league').value=x?.league||'';
+  document.getElementById('f-us').value=x?.us||'블루삭스';
+  document.getElementById('f-them').value=x?.them||'';
+  document.getElementById('f-memo').value=x?.memo||'';
+  document.getElementById('inning-count').value=x?.inningCount||'7';
+  switchTabByName('inning');
+  buildInningTable(x?.inningScore);
+  buildBatterTable(x?.batters||[]);
+  buildPitcherTable(x?.pitchers||[]);
+}
+function editGame(id){showPage('form');initForm(id);}
+function switchTab(n,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');document.getElementById('tab-'+n).classList.add('active');
+}
+function switchTabByName(n){
+  const ns=['inning','batter','pitcher'];
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',ns[i]===n));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+n));
+}
+
+// INNING
+function buildInningTable(data){
+  const n=+document.getElementById('inning-count').value;
+  const us=data?.us||Array(n).fill(''),them=data?.them||Array(n).fill('');
+  document.getElementById('inning-table').innerHTML=
+    '<tr><th>팀</th>'+Array.from({length:n},(_,i)=>`<th>${i+1}</th>`).join('')+'<th>R</th></tr>'+
+    '<tr><td style="padding:6px 10px;font-weight:700;white-space:nowrap">블루삭스</td>'+
+    Array.from({length:n},(_,i)=>`<td><input type="number" min="0" id="u${i}" value="${us[i]||''}" oninput="calcInningTotal()"></td>`).join('')+
+    '<td class="total-cell" id="t-us">0</td></tr>'+
+    '<tr><td style="padding:6px 10px;font-weight:700;white-space:nowrap" id="them-lbl">상대팀</td>'+
+    Array.from({length:n},(_,i)=>`<td><input type="number" min="0" id="t${i}" value="${them[i]||''}" oninput="calcInningTotal()"></td>`).join('')+
+    '<td class="total-cell" id="t-them">0</td></tr>';
+  const tn=document.getElementById('f-them')?.value;
+  if(tn) document.getElementById('them-lbl').textContent=tn;
+  calcInningTotal();
+}
+function calcInningTotal(){
+  const n=+document.getElementById('inning-count').value;
+  let us=0,th=0;
+  for(let i=0;i<n;i++){us+=(+document.getElementById('u'+i)?.value||0);th+=(+document.getElementById('t'+i)?.value||0);}
+  const tu=document.getElementById('t-us'),tt=document.getElementById('t-them');
+  tu.textContent=us;tt.textContent=th;
+  tu.className='total-cell '+(us>th?'win-score':us<th?'loss-score':'');
+  tt.className='total-cell '+(th>us?'win-score':th<us?'loss-score':'');
+  const b=document.getElementById('result-banner');
+  if(us>0||th>0){b.className='result-banner '+(us>th?'win':'loss');b.textContent=us>th?`승리 ${us} - ${th}`:`패배 ${us} - ${th}`;}
+  else{b.className='result-banner';b.textContent='';}
+}
+
+// BATTER
+let bc=0;
+function buildBatterTable(rows){document.getElementById('batter-body').innerHTML='';bc=0;if(!rows.length){addBatterRow();return;}rows.forEach(r=>addBatterRow(r));}
+function addBatterRow(data={}){
+  bc++;const i=bc;
+  const pos=['','투수','포수','1루수','2루수','3루수','유격수','좌익수','중견수','우익수','지명타자','외야수'];
+  const pO=pos.map(p=>`<option value="${p}" ${data.pos===p?'selected':''}>${p}</option>`).join('');
+  const fields=['pa','ab','h','2b','3b','hr','rbi','r','bb','k','sb'];
+  const nums=fields.map(f=>`<td><input type="number" min="0" data-f="${f}" value="${data[f]||''}" oninput="calcBatter(${i})"></td>`).join('');
+  const tr=document.createElement('tr');tr.id=`br${i}`;
+  tr.innerHTML=`<td><input type="number" min="1" max="9" value="${data.order||bc}" style="width:36px"></td>
+    <td><input type="text" data-f="name" value="${data.name||''}" style="min-width:60px"></td>
+    <td><select>${pO}</select></td>${nums}
+    <td class="stat-auto" id="av${i}">-</td><td class="stat-auto" id="ob${i}">-</td>
+    <td class="stat-auto" id="sl${i}">-</td><td class="stat-auto" id="op${i}">-</td>
+    <td><button class="btn btn-danger btn-sm" onclick="document.getElementById('br${i}').remove()">✕</button></td>`;
+  document.getElementById('batter-body').appendChild(tr);calcBatter(i);
+}
+function calcBatter(i){
+  const row=document.getElementById('br'+i);if(!row)return;
+  const v=k=>+(row.querySelector(`[data-f="${k}"]`)?.value||0);
+  const ab=v('ab'),h=v('h'),bb=v('bb'),pa=v('pa'),_2b=v('2b'),_3b=v('3b'),hr=v('hr');
+  const avg=ab?h/ab:null,obp=pa?(h+bb)/pa:null;
+  const tb=(h-_2b-_3b-hr)+2*_2b+3*_3b+4*hr,slg=ab?tb/ab:null;
+  const ops=(obp!==null&&slg!==null)?obp+slg:null;
+  const fmt=v=>v===null?'-':(v<1?v.toFixed(3).slice(1):v.toFixed(3));
+  const c=(v,lo,hi)=>v===null?'stat-normal':v>=hi?'stat-green':v>=lo?'stat-gold':'stat-red';
+  const set=(id,val,cl)=>{const el=document.getElementById(id);if(el){el.textContent=val;el.className='stat-auto '+cl;}};
+  set('av'+i,fmt(avg),c(avg,.280,.350));
+  set('ob'+i,fmt(obp),(obp===null?'stat-normal':obp>=.400?'stat-green':obp>=.330?'stat-gold':'stat-red'));
+  set('sl'+i,fmt(slg),(slg===null?'stat-normal':slg>=.500?'stat-green':slg>=.400?'stat-gold':'stat-red'));
+  set('op'+i,fmt(ops),(ops===null?'stat-normal':ops>=.850?'stat-green':ops>=.700?'stat-gold':'stat-red'));
+}
+
+// PITCHER
+let pc=0;
+function buildPitcherTable(rows){document.getElementById('pitcher-body').innerHTML='';pc=0;if(!rows.length){addPitcherRow();return;}rows.forEach(r=>addPitcherRow(r));}
+function addPitcherRow(data={}){
+  pc++;const i=pc;
+  const results=['','승','패','홀드','세이브','블론','노디시전'];
+  const rO=results.map(r=>`<option value="${r}" ${data.result===r?'selected':''}>${r}</option>`).join('');
+  const fields=['ip','bf','h','hr','bb','k','r','er','np'];
+  const nums=fields.map(f=>`<td><input type="${f==='ip'?'text':'number'}" min="0" data-f="${f}" value="${data[f]||''}" ${f==='ip'?'placeholder="6.2"':''} oninput="calcPitcher(${i})"></td>`).join('');
+  const tr=document.createElement('tr');tr.id=`pr${i}`;
+  tr.innerHTML=`<td><input type="text" data-f="name" value="${data.name||''}" style="min-width:60px"></td>
+    <td><select data-f="result">${rO}</select></td>${nums}
+    <td class="stat-auto" id="pe${i}">-</td><td class="stat-auto" id="pw${i}">-</td>
+    <td class="stat-auto" id="pk${i}">-</td>
+    <td><button class="btn btn-danger btn-sm" onclick="document.getElementById('pr${i}').remove()">✕</button></td>`;
+  document.getElementById('pitcher-body').appendChild(tr);calcPitcher(i);
+}
+function parseIP(ip){const p=String(ip).split('.');return(+p[0]||0)+(+p[1]||0)/3;}
+function calcPitcher(i){
+  const row=document.getElementById('pr'+i);if(!row)return;
+  const v=k=>row.querySelector(`[data-f="${k}"]`)?.value||'0';
+  const ip=parseIP(v('ip')),er=+v('er'),h=+v('h'),bb=+v('bb'),k=+v('k');
+  const era=ip>0?er/ip*9:null,whip=ip>0?(h+bb)/ip:null,k9=ip>0?k/ip*9:null;
+  const c=(v,lo,hi,inv=true)=>v===null?'stat-normal':inv?(v<=lo?'stat-green':v<=hi?'stat-gold':'stat-red'):(v>=hi?'stat-green':v>=lo?'stat-gold':'stat-red');
+  const set=(id,val,cl)=>{const el=document.getElementById(id);if(el){el.textContent=val;el.className='stat-auto '+cl;}};
+  set('pe'+i,era!==null?era.toFixed(2):'-',c(era,2.5,4));
+  set('pw'+i,whip!==null?whip.toFixed(2):'-',c(whip,1.0,1.3));
+  set('pk'+i,k9!==null?k9.toFixed(1):'-',c(k9,7,9,false));
+}
+
+// SAVE
+async function saveGame(){
+  if(!db){showToast('Firebase가 연결되지 않았습니다.','error');return;}
+  const btn=document.getElementById('save-btn');btn.disabled=true;btn.textContent='저장 중...';
+  const n=+document.getElementById('inning-count').value;
+  const us=Array.from({length:n},(_,i)=>document.getElementById('u'+i)?.value||'');
+  const them=Array.from({length:n},(_,i)=>document.getElementById('t'+i)?.value||'');
+  const batters=[];
+  document.querySelectorAll('#batter-body tr').forEach(tr=>{
+    const inp=tr.querySelectorAll('input,select');const b={};
+    ['order','name','pos','pa','ab','h','2b','3b','hr','rbi','r','bb','k','sb'].forEach((f,idx)=>{b[f]=inp[idx]?.value||'';});
+    if(b.name) batters.push(b);
+  });
+  const pitchers=[];
+  document.querySelectorAll('#pitcher-body tr').forEach(tr=>{
+    const inp=tr.querySelectorAll('input,select');const p={};
+    ['name','result','ip','bf','h','hr','bb','k','r','er','np'].forEach((f,idx)=>{p[f]=inp[idx]?.value||'';});
+    if(p.name) pitchers.push(p);
+  });
+  const game={
+    date:document.getElementById('f-date').value,
+    season:document.getElementById('f-season').value,
+    league:document.getElementById('f-league').value,
+    us:document.getElementById('f-us').value,
+    them:document.getElementById('f-them').value,
+    place:document.getElementById('f-place').value,
+    memo:document.getElementById('f-memo').value,
+    inningCount:n,inningScore:{us,them},batters,pitchers,
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  };
+  try{
+    setSyncStatus('syncing','저장 중...');
+    if(editingId){await db.collection('games').doc(editingId).update(game);}
+    else{game.createdAt=firebase.firestore.FieldValue.serverTimestamp();await db.collection('games').add(game);}
+    editingId=null;showToast('저장 완료! ✅','success');showPage('home');
+  }catch(e){showToast('저장 실패: '+e.message,'error');setSyncStatus('online','실시간 연결됨');}
+  finally{btn.disabled=false;btn.textContent='💾 저장';}
+}
+
+// DETAIL
+function showDetail(id){
+  const g=games.find(x=>x.id===id);if(!g)return;
+  const our=g.inningScore?.us||[],them=g.inningScore?.them||[];
+  const us=our.reduce((a,b)=>a+(+b||0),0),th=them.reduce((a,b)=>a+(+b||0),0);
+  const win=us>th,n=g.inningCount||7;
+  const sbH='<tr><th>팀</th>'+Array.from({length:n},(_,i)=>`<th>${i+1}</th>`).join('')+'<th>R</th></tr>';
+  const sbU='<tr><td style="font-weight:700;padding:8px">'+g.us+'</td>'+our.map(v=>`<td>${v||0}</td>`).join('')+`<td style="font-weight:700;color:${win?'var(--green)':'var(--red)'}">${us}</td></tr>`;
+  const sbT='<tr><td style="font-weight:700;padding:8px">'+g.them+'</td>'+them.map(v=>`<td>${v||0}</td>`).join('')+`<td style="font-weight:700;color:${!win?'var(--green)':'var(--red)'}">${th}</td></tr>`;
+  const fmt=v=>v===null?'-':(v<1?v.toFixed(3).slice(1):v.toFixed(3));
+  const bc2=(v,lo,hi)=>v===null?'':v>=hi?'stat-green':v>=lo?'stat-gold':'stat-red';
+  const batRows=(g.batters||[]).map(b=>{
+    const ab=+b.ab||0,h=+b.h||0,bb=+b.bb||0,pa=+b.pa||0,_2b=+b['2b']||0,_3b=+b['3b']||0,hr=+b.hr||0;
+    const avg=ab?h/ab:null,obp=pa?(h+bb)/pa:null;
+    const tb=(h-_2b-_3b-hr)+2*_2b+3*_3b+4*hr,slg=ab?tb/ab:null,ops=(obp!==null&&slg!==null)?obp+slg:null;
+    return `<tr><td>${b.order||''}</td><td style="font-weight:700">${b.name||''}</td><td>${b.pos||''}</td>
+      <td>${b.pa||0}</td><td>${b.ab||0}</td><td>${b.h||0}</td><td>${b['2b']||0}</td><td>${b['3b']||0}</td><td>${b.hr||0}</td>
+      <td>${b.rbi||0}</td><td>${b.r||0}</td><td>${b.bb||0}</td><td>${b.k||0}</td><td>${b.sb||0}</td>
+      <td class="${bc2(avg,.280,.350)}">${fmt(avg)}</td><td class="${bc2(obp,.330,.400)}">${fmt(obp)}</td>
+      <td class="${bc2(slg,.400,.500)}">${fmt(slg)}</td><td class="${bc2(ops,.700,.850)}">${fmt(ops)}</td></tr>`;
+  }).join('');
+  const pc2=(v,lo,hi,inv=true)=>v===null?'':inv?(v<=lo?'stat-green':v<=hi?'stat-gold':'stat-red'):(v>=hi?'stat-green':v>=lo?'stat-gold':'stat-red');
+  const pitchRows=(g.pitchers||[]).map(p=>{
+    const ip=parseIP(p.ip||'0'),er=+p.er||0,h=+p.h||0,bb=+p.bb||0,k=+p.k||0;
+    const era=ip>0?er/ip*9:null,whip=ip>0?(h+bb)/ip:null,k9=ip>0?k/ip*9:null;
+    return `<tr><td style="font-weight:700">${p.name||''}</td>
+      <td><span class="tag ${p.result==='승'?'tag-win':p.result==='패'?'tag-loss':''}"><b>${p.result||''}</b></span></td>
+      <td>${p.ip||''}</td><td>${p.bf||0}</td><td>${p.h||0}</td><td>${p.hr||0}</td>
+      <td>${p.bb||0}</td><td>${p.k||0}</td><td>${p.r||0}</td><td>${p.er||0}</td><td>${p.np||0}</td>
+      <td class="${pc2(era,2.5,4)}">${era!==null?era.toFixed(2):'-'}</td>
+      <td class="${pc2(whip,1.0,1.3)}">${whip!==null?whip.toFixed(2):'-'}</td>
+      <td class="${pc2(k9,7,9,false)}">${k9!==null?k9.toFixed(1):'-'}</td></tr>`;
+  }).join('');
+  const badges=[g.season,g.league].filter(Boolean).map(v=>`<span class="card-badge" style="font-size:.8rem;padding:3px 10px">${v}</span>`).join(' ');
+  document.getElementById('detail-content').innerHTML=`
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <button class="btn btn-outline btn-sm" onclick="showPage('home')">← 목록</button>
+      <button class="btn btn-gold btn-sm" onclick="editGame('${g.id}');showPage('form')">✏️ 수정</button>
+    </div>
+    <div class="form-card">
+      <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+        <div>
+          <div style="display:flex;gap:6px;margin-bottom:6px">${badges}</div>
+          <div style="color:var(--muted);font-size:.8rem;margin-bottom:2px">${g.date||''} ${g.place?'· '+g.place:''}</div>
+          <div style="font-family:'Bebas Neue';font-size:1.4rem;color:var(--gold)">${g.us} <span style="color:var(--muted);font-size:1rem">vs</span> ${g.them}</div>
+        </div>
+        <div style="font-family:'Bebas Neue';font-size:3rem;color:var(--gold);line-height:1">${us} <span style="color:var(--muted);font-size:1.5rem">-</span> ${th}</div>
+        <span class="tag ${win?'tag-win':'tag-loss'}" style="font-size:.9rem;padding:4px 14px">${win?'🏆 승리':'패배'}</span>
+      </div>
+      ${g.memo?`<div style="margin-top:12px;color:var(--muted);font-size:.85rem;padding-top:12px;border-top:1px solid var(--border)">📝 ${g.memo}</div>`:''}
+    </div>
+    <div class="table-section"><h3>스코어보드</h3>
+      <div class="scoreboard-wrap"><table class="view-table" style="min-width:400px">${sbH}${sbU}${sbT}</table></div>
+    </div>
+    ${batRows?`<div class="table-section"><h3>타자 기록</h3><div style="overflow-x:auto">
+      <table class="view-table" style="min-width:800px"><thead><tr>
+        <th>타순</th><th>이름</th><th>POS</th><th>PA</th><th>AB</th><th>H</th><th>2B</th><th>3B</th><th>HR</th>
+        <th>RBI</th><th>R</th><th>BB</th><th>K</th><th>SB</th><th>AVG</th><th>OBP</th><th>SLG</th><th>OPS</th>
+      </tr></thead><tbody>${batRows}</tbody></table></div></div>`:''}
+    ${pitchRows?`<div class="table-section"><h3>투수 기록</h3><div style="overflow-x:auto">
+      <table class="view-table" style="min-width:700px"><thead><tr>
+        <th>이름</th><th>결과</th><th>IP</th><th>BF</th><th>H</th><th>HR</th><th>BB</th><th>K</th><th>R</th><th>ER</th><th>NP</th>
+        <th>ERA</th><th>WHIP</th><th>K/9</th>
+      </tr></thead><tbody>${pitchRows}</tbody></table></div></div>`:''}`;
+  showPage('detail');
+}
+
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');t.textContent=msg;t.className='show '+type;
+  setTimeout(()=>t.className='',3000);
+}
+
+(function(){
+  const saved=localStorage.getItem(CONFIG_KEY);
+  if(saved){try{initFirebase(JSON.parse(saved));}catch(e){localStorage.removeItem(CONFIG_KEY);}}
+  buildInningTable();buildBatterTable([]);buildPitcherTable([]);
+})();
+</script>
+</body>
+</html>
