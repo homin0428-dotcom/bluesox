@@ -22,12 +22,12 @@ nav{position:sticky;top:0;z-index:100;background:rgba(6,9,15,.96);backdrop-filte
 .nav-b{ display:flex; align-items:center; }
 .nav-title{font-family:'Bebas Neue';font-size:.95rem;color:var(--gold);letter-spacing:1px;line-height:1.1;}
 .nav-sub{font-size:.52rem;color:var(--muted);letter-spacing:.3px;line-height:1.1;}
-.nav-spacer{flex:1;min-width:4px;}
+.nav-spacer{flex:1;}
 .sync-dot{width:9px;height:9px;border-radius:50%;background:#ef4444;display:inline-block;transition:background .3s;}
 .sync-dot.online{background:var(--green);}
 .sync-dot.syncing{background:var(--gold);animation:pulse .8s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
-.sync-label{font-size:.72rem;color:var(--muted);}
+.sync-label{display:none;}
 .btn{padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-family:'Noto Sans KR';font-size:.875rem;font-weight:500;transition:all .2s;}
 .btn-gold{background:var(--gold);color:#06090f;}
 .btn-gold:hover{background:#d4a017;}
@@ -320,13 +320,13 @@ textarea{resize:vertical;min-height:70px;}
       <div class="nav-sub">One Team</div>
     </div>
   </div>
-  <div style="display:flex;align-items:center;flex-shrink:0;">
+  <div style="display:flex;align-items:center;flex-shrink:0;margin-right:4px;">
     <span class="sync-dot" id="sync-dot" style="width:9px;height:9px;" title="연결 상태"></span>
   </div>
-  <span id="current-league-badge" onclick="document.getElementById('league-overlay').style.display='flex'" style="font-size:.68rem;background:rgba(240,180,41,.15);color:var(--gold);border:1px solid var(--gold);border-radius:4px;padding:2px 6px;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="리그 변경"></span>
+  <span id="current-league-badge" onclick="document.getElementById('league-overlay').style.display='flex'" style="font-size:.68rem;background:rgba(240,180,41,.15);color:var(--gold);border:1px solid var(--gold);border-radius:4px;padding:3px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="리그 변경"></span>
   <div class="nav-spacer"></div>
-  <button onclick="showPage('stats')" style="background:rgba(240,180,41,.1);border:1px solid var(--gold);color:var(--gold);border-radius:6px;padding:5px 12px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:'Noto Sans KR';letter-spacing:.5px;">기록</button>
-  <button class="btn btn-gold admin-only" onclick="showPage('form');initForm()" style="font-size:.72rem;padding:4px 10px;white-space:nowrap;flex-shrink:0;">새경기</button>
+  <button onclick="showPage('stats')" style="background:rgba(240,180,41,.1);border:1px solid var(--gold);color:var(--gold);border-radius:6px;padding:5px 12px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:'Noto Sans KR';letter-spacing:.5px;margin-left:6px;">기록</button>
+  <button class="btn btn-gold admin-only" onclick="showPage('form');initForm()" style="font-size:.72rem;padding:4px 10px;white-space:nowrap;flex-shrink:0;margin-left:4px;">새경기</button>
 </nav>
 
 <!-- HOME -->
@@ -447,7 +447,7 @@ function selectLeague(league){
   currentLeague=league;
   gamesCollection=league==='YB'?'games_yb':'games_kyonae';
   // 선택된 리그 표시
-  document.getElementById('current-league-badge').textContent=league==='YB'?'🏟️ YB리그':'⚾ 교내리그';
+  document.getElementById('current-league-badge').textContent=league==='YB'?'YB리그':'교내리그';
   document.getElementById('league-overlay').style.display='none';
   if(db) startListener();
 }
