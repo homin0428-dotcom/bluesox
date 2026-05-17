@@ -1036,10 +1036,13 @@ function showDetail(id){
       :`<td>${b.order||''}</td>`;
     const rowStyle=b.isPH?'background:rgba(240,180,41,0.04);':'';
     const inningCells=Array.from({length:inningN},(_,idx)=>`<td>${(b.innings||{})[idx+1]||'-'}</td>`).join('');
+    const dispRbi=+b.rbi||s.rbi;
+    const dispR=+b.r||s.r;
+    const dispSb=+b.sb||s.sb;
     return `<tr style="${rowStyle}">${orderCell}<td style="font-weight:700">${b.name||''}</td><td>${b.pos||''}</td>
       ${inningCells}
       <td style="font-weight:700">${s.ab}</td><td style="font-weight:700">${s.h}</td>
-      <td>${s.rbi}</td><td>${s.r}</td><td>${s.hr}</td><td>${s.sb}</td><td>${s.bb}</td><td>${s.k}</td>
+      <td>${dispRbi}</td><td>${dispR}</td><td>${s.hr}</td><td>${dispSb}</td><td>${s.bb}</td><td>${s.k}</td>
       <td class="${colorAvg(avg)}">${avg}</td><td>${obp}</td><td>${slg}</td></tr>`;
   }).join('');
   const pc2=(v,lo,hi,inv=true)=>v===null?'':inv?(v<=lo?'stat-green':v<=hi?'stat-gold':'stat-red'):(v>=hi?'stat-green':v>=lo?'stat-gold':'stat-red');
@@ -1153,8 +1156,12 @@ function renderBatterStats(filteredGames){
       const s=sumBatterStats(b.innings||{});
       map[key].games++;
       map[key].ab+=s.ab;map[key].h+=s.h;map[key].b2+=s.b2;map[key].b3+=s.b3;
-      map[key].hr+=s.hr;map[key].rbi+=s.rbi;map[key].r+=s.r;
-      map[key].bb+=s.bb;map[key].k+=s.k;map[key].sb+=s.sb;
+      map[key].hr+=s.hr;
+      // 타점/득점/도루는 저장된 값 우선 사용 (소형 칸 입력값 포함)
+      map[key].rbi+=(+b.rbi||s.rbi);
+      map[key].r+=(+b.r||s.r);
+      map[key].sb+=(+b.sb||s.sb);
+      map[key].bb+=s.bb;map[key].k+=s.k;
       map[key].dp+=s.dp||0;map[key].pa+=s.pa;
     });
   });
