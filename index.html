@@ -377,7 +377,7 @@ textarea{resize:vertical;min-height:70px;}
       <div class="form-group">
         <label>우리팀</label>
         <div style="display:flex;gap:6px;align-items:center;">
-          <input type="text" id="f-us" value="블루삭스" style="flex:1;">
+          <input type="text" id="f-us" value="블루삭스" style="width:120px;min-width:80px;flex:none;">
           <button type="button" id="btn-top" onclick="setBatOrder('선공')" style="padding:6px 12px;border-radius:6px;border:1px solid var(--gold);background:var(--gold);color:#06090f;font-size:.78rem;cursor:pointer;white-space:nowrap;font-weight:700;">선공</button>
           <button type="button" id="btn-bot" onclick="setBatOrder('말공')" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.78rem;cursor:pointer;white-space:nowrap;">말공</button>
         </div>
@@ -816,6 +816,54 @@ function renderInnStep(){
   }
 }
 
+function updateStepRow(displayTr,srcTr,i){
+  // 포커스 유지하면서 지표 셀만 업데이트
+  const innings={};
+  srcTr.querySelectorAll('[data-inn]').forEach(inp=>{innings[inp.dataset.inn]=inp.value;});
+  let extraRbi=0,extraR=0,extraSb=0;
+  srcTr.querySelectorAll('[data-ex]').forEach(inp=>{
+    const v=+inp.value||0;
+    if(inp.dataset.ex==='rbi') extraRbi+=v;
+    else if(inp.dataset.ex==='r') extraR+=v;
+    else if(inp.dataset.ex==='sb') extraSb+=v;
+  });
+  const s=sumBatterStats(innings);
+  if(extraRbi>0) s.rbi=extraRbi;
+  if(extraR>0) s.r=extraR;
+  if(extraSb>0) s.sb=extraSb;
+  const avg=fmtAvg(s.h,s.ab);
+  // step-stat 셀들만 업데이트
+  const statCells=displayTr.querySelectorAll('.step-stat');
+  const vals=[s.ab,s.h,s.rbi,s.r,s.hr,s.sb,s.bb,s.k,avg];
+  statCells.forEach((td,idx)=>{
+    td.textContent=vals[idx]??'';
+    if(idx===8){td.className='step-stat '+colorAvg(avg);}
+  });
+}
+
+function updateStepStatRow(newTr,srcTr,i){
+  // 포커스 유지하면서 누적 지표만 업데이트
+  const innings={};
+  srcTr.querySelectorAll('[data-inn]').forEach(inp=>{innings[inp.dataset.inn]=inp.value;});
+  let extraRbi=0,extraR=0,extraSb=0;
+  srcTr.querySelectorAll('[data-ex]').forEach(inp=>{
+    const v=+inp.value||0;
+    if(inp.dataset.ex==='rbi') extraRbi+=v;
+    else if(inp.dataset.ex==='r') extraR+=v;
+    else if(inp.dataset.ex==='sb') extraSb+=v;
+  });
+  const s=sumBatterStats(innings);
+  if(extraRbi>0) s.rbi=extraRbi;
+  if(extraR>0) s.r=extraR;
+  if(extraSb>0) s.sb=extraSb;
+  const avg=fmtAvg(s.h,s.ab);
+  // step-stat 셀들만 업데이트 (포커스 안 건드림)
+  const statCells=newTr.querySelectorAll('.step-stat');
+  const vals=[s.ab,s.h,s.rbi,s.r,s.hr,s.sb,s.bb,s.k];
+  vals.forEach((v,idx)=>{if(statCells[idx])statCells[idx].textContent=v;});
+  if(statCells[8]){statCells[8].textContent=avg;statCells[8].className='step-stat '+colorAvg(avg);}
+}
+
 function renderInnStepTable(innNum){
   const head=document.getElementById('ib-inning-head');
   const body=document.getElementById('batter-body-inning');
@@ -889,7 +937,7 @@ function renderInnStepTable(innNum){
     resInput.value=resInp?.value||'';
     resInput.oninput=function(){
       if(resInp){resInp.value=this.value;calcBatter(i);}
-      setTimeout(()=>renderInnStepTable(innNum),50);
+      updateStepRow(newTr,srcTr,i);
     };
     resTd.appendChild(resInput);
 
@@ -900,7 +948,7 @@ function renderInnStepTable(innNum){
       const inp=document.createElement('input');
       inp.type='number';inp.min=0;inp.max=9;inp.value=val||'';inp.placeholder='0';
       inp.style.cssText='width:22px;font-size:.68rem;text-align:center;border:none;background:rgba(255,255,255,.05);color:var(--gold);border-radius:3px;padding:1px 2px;';
-      inp.oninput=function(){if(origEl){origEl.value=this.value;calcBatter(i);}setTimeout(()=>renderInnStepTable(innNum),50);};
+      inp.oninput=function(){if(origEl){origEl.value=this.value;calcBatter(i);}updateStepRow(newTr,srcTr,i);};
       subDiv.appendChild(lb);subDiv.appendChild(inp);
     });
     resTd.appendChild(subDiv);
@@ -922,6 +970,31 @@ function renderInnStepTable(innNum){
     newTr.appendChild(avgTd);
 
     body.appendChild(newTr);
+  });
+}
+
+function updateStepRow(stepTr,srcTr,i){
+  // 원본 행에서 최신 값 읽어서 지표 셀만 업데이트
+  const innings={};
+  srcTr.querySelectorAll('[data-inn]').forEach(inp=>{innings[inp.dataset.inn]=inp.value;});
+  let extraRbi=0,extraR=0,extraSb=0;
+  srcTr.querySelectorAll('[data-ex]').forEach(inp=>{
+    const v=+inp.value||0;
+    if(inp.dataset.ex==='rbi') extraRbi+=v;
+    else if(inp.dataset.ex==='r') extraR+=v;
+    else if(inp.dataset.ex==='sb') extraSb+=v;
+  });
+  const s=sumBatterStats(innings);
+  if(extraRbi>0) s.rbi=extraRbi;
+  if(extraR>0) s.r=extraR;
+  if(extraSb>0) s.sb=extraSb;
+  const avg=fmtAvg(s.h,s.ab);
+  // step-stat 셀들만 업데이트 (포커스 유지)
+  const statCells=stepTr.querySelectorAll('.step-stat');
+  const vals=[s.ab,s.h,s.rbi,s.r,s.hr,s.sb,s.bb,s.k,avg];
+  statCells.forEach((td,idx)=>{
+    td.textContent=vals[idx]??'';
+    if(idx===8){td.className='step-stat '+colorAvg(avg);}
   });
 }
 
