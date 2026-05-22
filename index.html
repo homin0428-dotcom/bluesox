@@ -374,8 +374,15 @@ textarea{resize:vertical;min-height:70px;}
         <input type="text" id="f-league" placeholder="교내, 대경, YB, OB 등">
       </div>
       <div class="form-group"><label>장소</label><input type="text" id="f-place" placeholder="홈구장, 원정 등"></div>
-      <div class="form-group"><label>우리팀</label><input type="text" id="f-us" value="블루삭스"></div>
-      <input type="hidden" id="f-batorder" value="선공">
+      <div class="form-group">
+        <label>우리팀</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="text" id="f-us" value="블루삭스" style="flex:1;">
+          <button type="button" id="btn-top" onclick="setBatOrder('선공')" style="padding:6px 12px;border-radius:6px;border:1px solid var(--gold);background:var(--gold);color:#06090f;font-size:.78rem;cursor:pointer;white-space:nowrap;font-weight:700;">선공</button>
+          <button type="button" id="btn-bot" onclick="setBatOrder('말공')" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.78rem;cursor:pointer;white-space:nowrap;">말공</button>
+        </div>
+        <input type="hidden" id="f-batorder" value="선공">
+      </div>
       <div class="form-group"><label>상대팀</label><input type="text" id="f-them" placeholder="상대팀명"></div>
       <div class="form-group full"><label>메모</label><textarea id="f-memo" placeholder="경기 메모"></textarea></div>
     </div>
@@ -624,19 +631,21 @@ function switchTabByName(n){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+n));
 }
 
-let scoreBoardFlipped=false; // false=선공(블루삭스 위), true=말공(블루삭스 아래)
+let scoreBoardFlipped=false;
 
-function flipScoreBoard(){
-  scoreBoardFlipped=!scoreBoardFlipped;
-  document.getElementById('f-batorder').value=scoreBoardFlipped?'말공':'선공';
-  buildInningTable(getCurrentInningData());
-}
-
-function getCurrentInningData(){
-  const n=+document.getElementById('inning-count').value;
-  const us=Array.from({length:n},(_,i)=>document.getElementById('u'+i)?.value||'');
-  const them=Array.from({length:n},(_,i)=>document.getElementById('t'+i)?.value||'');
-  return {us,them};
+function setBatOrder(v){
+  scoreBoardFlipped=(v==='말공');
+  document.getElementById('f-batorder').value=v;
+  const btnTop=document.getElementById('btn-top');
+  const btnBot=document.getElementById('btn-bot');
+  if(v==='선공'){
+    btnTop.style.cssText='padding:6px 12px;border-radius:6px;border:1px solid var(--gold);background:var(--gold);color:#06090f;font-size:.78rem;cursor:pointer;white-space:nowrap;font-weight:700;';
+    btnBot.style.cssText='padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.78rem;cursor:pointer;white-space:nowrap;';
+  } else {
+    btnBot.style.cssText='padding:6px 12px;border-radius:6px;border:1px solid var(--gold);background:var(--gold);color:#06090f;font-size:.78rem;cursor:pointer;white-space:nowrap;font-weight:700;';
+    btnTop.style.cssText='padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.78rem;cursor:pointer;white-space:nowrap;';
+  }
+  buildInningTable();
 }
 
 function buildInningTable(data){
@@ -644,21 +653,14 @@ function buildInningTable(data){
   const us=data?.us||Array(n).fill(''),them=data?.them||Array(n).fill('');
   const usName=document.getElementById('f-us')?.value||'블루삭스';
   const themName=document.getElementById('f-them')?.value||'상대팀';
-  const swapBtn=`<td rowspan="2" style="padding:0 6px;text-align:center;vertical-align:middle;">
-    <button onclick="flipScoreBoard()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:3px 6px;cursor:pointer;font-size:.9rem;" title="선공/말공 변경">↕</button>
-  </td>`;
-  const usRow=`<tr><td style="padding:6px 10px;font-weight:700;white-space:nowrap">${usName}</td>`+
+  const header='<tr><th>팀</th>'+Array.from({length:n},(_,i)=>`<th>${i+1}</th>`).join('')+'<th>R</th></tr>';
+  const usRow='<tr><td style="padding:6px 10px;font-weight:700;white-space:nowrap">'+usName+'</td>'+
     Array.from({length:n},(_,i)=>`<td><input type="number" min="0" id="u${i}" value="${us[i]||''}" oninput="calcInningTotal()"></td>`).join('')+
-    `<td class="total-cell" id="t-us">0</td></tr>`;
-  const themRow=`<tr><td style="padding:6px 10px;font-weight:700;white-space:nowrap" id="them-lbl">${themName}</td>`+
+    '<td class="total-cell" id="t-us">0</td></tr>';
+  const themRow='<tr><td style="padding:6px 10px;font-weight:700;white-space:nowrap" id="them-lbl">'+themName+'</td>'+
     Array.from({length:n},(_,i)=>`<td><input type="number" min="0" id="t${i}" value="${them[i]||''}" oninput="calcInningTotal()"></td>`).join('')+
-    `<td class="total-cell" id="t-them">0</td></tr>`;
-  const headerRow=`<tr>${swapBtn}<th>팀</th>`+Array.from({length:n},(_,i)=>`<th>${i+1}</th>`).join('')+`<th>R</th></tr>`;
-  if(scoreBoardFlipped){
-    document.getElementById('inning-table').innerHTML=headerRow+themRow+usRow;
-  } else {
-    document.getElementById('inning-table').innerHTML=headerRow+usRow+themRow;
-  }
+    '<td class="total-cell" id="t-them">0</td></tr>';
+  document.getElementById('inning-table').innerHTML=header+(scoreBoardFlipped?themRow+usRow:usRow+themRow);
   calcInningTotal();
 }
 
@@ -887,7 +889,7 @@ function renderInnStepTable(innNum){
     resInput.value=resInp?.value||'';
     resInput.oninput=function(){
       if(resInp){resInp.value=this.value;calcBatter(i);}
-      updateStepStats(newTr,i,s,avg);
+      setTimeout(()=>renderInnStepTable(innNum),50);
     };
     resTd.appendChild(resInput);
 
@@ -898,7 +900,7 @@ function renderInnStepTable(innNum){
       const inp=document.createElement('input');
       inp.type='number';inp.min=0;inp.max=9;inp.value=val||'';inp.placeholder='0';
       inp.style.cssText='width:22px;font-size:.68rem;text-align:center;border:none;background:rgba(255,255,255,.05);color:var(--gold);border-radius:3px;padding:1px 2px;';
-      inp.oninput=function(){if(origEl){origEl.value=this.value;calcBatter(i);}};
+      inp.oninput=function(){if(origEl){origEl.value=this.value;calcBatter(i);}setTimeout(()=>renderInnStepTable(innNum),50);};
       subDiv.appendChild(lb);subDiv.appendChild(inp);
     });
     resTd.appendChild(subDiv);
