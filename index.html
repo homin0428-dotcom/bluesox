@@ -55,7 +55,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(6,9,15,.96);backdrop-filte
 
 /* HERO */
 .hero{
-  background:linear-gradient(135deg,#060d1e 0%,#0f2248 40%,#162f5e 60%,#060d1e 100%);
+  background:linear-gradient(135deg,#060d1e 0%,#0f2248 50%,#060d1e 100%);
   border:1px solid var(--border);border-radius:16px;padding:32px 28px;
   display:flex;align-items:center;gap:36px;margin-bottom:28px;
   position:relative;overflow:hidden;
@@ -94,7 +94,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(6,9,15,.96);backdrop-filte
 .empty-state .icon{font-size:3rem;margin-bottom:12px;}
 
 /* FORM */
-.form-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px;}
+.form-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;}
 .form-title{font-family:'Bebas Neue';font-size:1.3rem;color:var(--gold);letter-spacing:2px;margin-bottom:18px;}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .form-group{display:flex;flex-direction:column;gap:5px;}
@@ -374,15 +374,8 @@ textarea{resize:vertical;min-height:70px;}
         <input type="text" id="f-league" placeholder="교내, 대경, YB, OB 등">
       </div>
       <div class="form-group"><label>장소</label><input type="text" id="f-place" placeholder="홈구장, 원정 등"></div>
-      <div class="form-group">
-        <label>우리팀</label>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <input type="text" id="f-us" value="블루삭스" style="flex:1;">
-          <button type="button" id="btn-top" onclick="setBatOrder('선공')" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.78rem;cursor:pointer;white-space:nowrap;">선공</button>
-          <button type="button" id="btn-bot" onclick="setBatOrder('말공')" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.78rem;cursor:pointer;white-space:nowrap;">말공</button>
-        </div>
-        <input type="hidden" id="f-batorder" value="선공">
-      </div>
+      <div class="form-group"><label>우리팀</label><input type="text" id="f-us" value="블루삭스"></div>
+      <input type="hidden" id="f-batorder" value="선공">
       <div class="form-group"><label>상대팀</label><input type="text" id="f-them" placeholder="상대팀명"></div>
       <div class="form-group full"><label>메모</label><textarea id="f-memo" placeholder="경기 메모"></textarea></div>
     </div>
@@ -484,18 +477,7 @@ function selectLeague(league){
 }
 const ADMIN_PW='2026';
 const isAdmin=new URLSearchParams(location.search).get('admin')===ADMIN_PW;
-function setBatOrder(v){
-  document.getElementById('f-batorder').value=v;
-  const btnTop=document.getElementById('btn-top');
-  const btnBot=document.getElementById('btn-bot');
-  if(v==='선공'){
-    btnTop.style.background='var(--gold)';btnTop.style.color='#06090f';btnTop.style.borderColor='var(--gold)';
-    btnBot.style.background='transparent';btnBot.style.color='var(--muted)';btnBot.style.borderColor='var(--border)';
-  } else {
-    btnBot.style.background='var(--gold)';btnBot.style.color='#06090f';btnBot.style.borderColor='var(--gold)';
-    btnTop.style.background='transparent';btnTop.style.color='var(--muted)';btnTop.style.borderColor='var(--border)';
-  }
-}
+
 function applyAdminMode(){
   document.querySelectorAll('.admin-only').forEach(el=>{el.style.display=isAdmin?'':'none';});
 }
@@ -642,19 +624,41 @@ function switchTabByName(n){
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+n));
 }
 
+let scoreBoardFlipped=false; // false=선공(블루삭스 위), true=말공(블루삭스 아래)
+
+function flipScoreBoard(){
+  scoreBoardFlipped=!scoreBoardFlipped;
+  document.getElementById('f-batorder').value=scoreBoardFlipped?'말공':'선공';
+  buildInningTable(getCurrentInningData());
+}
+
+function getCurrentInningData(){
+  const n=+document.getElementById('inning-count').value;
+  const us=Array.from({length:n},(_,i)=>document.getElementById('u'+i)?.value||'');
+  const them=Array.from({length:n},(_,i)=>document.getElementById('t'+i)?.value||'');
+  return {us,them};
+}
+
 function buildInningTable(data){
   const n=+document.getElementById('inning-count').value;
   const us=data?.us||Array(n).fill(''),them=data?.them||Array(n).fill('');
-  document.getElementById('inning-table').innerHTML=
-    '<tr><th>팀</th>'+Array.from({length:n},(_,i)=>`<th>${i+1}</th>`).join('')+'<th>R</th></tr>'+
-    '<tr><td style="padding:6px 10px;font-weight:700;white-space:nowrap">블루삭스</td>'+
+  const usName=document.getElementById('f-us')?.value||'블루삭스';
+  const themName=document.getElementById('f-them')?.value||'상대팀';
+  const swapBtn=`<td rowspan="2" style="padding:0 6px;text-align:center;vertical-align:middle;">
+    <button onclick="flipScoreBoard()" style="background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:3px 6px;cursor:pointer;font-size:.9rem;" title="선공/말공 변경">↕</button>
+  </td>`;
+  const usRow=`<tr><td style="padding:6px 10px;font-weight:700;white-space:nowrap">${usName}</td>`+
     Array.from({length:n},(_,i)=>`<td><input type="number" min="0" id="u${i}" value="${us[i]||''}" oninput="calcInningTotal()"></td>`).join('')+
-    '<td class="total-cell" id="t-us">0</td></tr>'+
-    '<tr><td style="padding:6px 10px;font-weight:700;white-space:nowrap" id="them-lbl">상대팀</td>'+
+    `<td class="total-cell" id="t-us">0</td></tr>`;
+  const themRow=`<tr><td style="padding:6px 10px;font-weight:700;white-space:nowrap" id="them-lbl">${themName}</td>`+
     Array.from({length:n},(_,i)=>`<td><input type="number" min="0" id="t${i}" value="${them[i]||''}" oninput="calcInningTotal()"></td>`).join('')+
-    '<td class="total-cell" id="t-them">0</td></tr>';
-  const tn=document.getElementById('f-them')?.value;
-  if(tn) document.getElementById('them-lbl').textContent=tn;
+    `<td class="total-cell" id="t-them">0</td></tr>`;
+  const headerRow=`<tr>${swapBtn}<th>팀</th>`+Array.from({length:n},(_,i)=>`<th>${i+1}</th>`).join('')+`<th>R</th></tr>`;
+  if(scoreBoardFlipped){
+    document.getElementById('inning-table').innerHTML=headerRow+themRow+usRow;
+  } else {
+    document.getElementById('inning-table').innerHTML=headerRow+usRow+themRow;
+  }
   calcInningTotal();
 }
 
@@ -813,25 +817,22 @@ function renderInnStep(){
 function renderInnStepTable(innNum){
   const head=document.getElementById('ib-inning-head');
   const body=document.getElementById('batter-body-inning');
-  // 헤더
-  head.innerHTML=`<tr><th></th><th>타순</th><th>이름</th><th>${innNum}회</th><th>타</th><th>득</th><th>도</th><th style="min-width:8px;background:rgba(0,0,0,.3);"></th><th>타수</th><th>안타</th><th>타점</th><th>득점</th><th>홈런</th><th>도루</th><th>4사구</th><th>삼진</th><th>타율</th></tr>`;
-  // 바디: batter-body에서 행 읽어서 동기화
+  head.innerHTML=`<tr><th></th><th>타순</th><th>이름</th><th>${innNum}회 결과</th><th style="min-width:4px;background:rgba(0,0,0,.3);"></th><th>타수</th><th>안타</th><th>타점</th><th>득점</th><th>홈런</th><th>도루</th><th>4사구</th><th>삼진</th><th>타율</th></tr>`;
   body.innerHTML='';
-  document.querySelectorAll('#batter-body tr').forEach(tr=>{
-    const i=tr.id.replace('br','');
-    const isPH=tr.classList.contains('ph-row');
-    const nameEl=tr.querySelector('[data-f="name"]');
-    const orderEl=tr.querySelector('input[type="number"]');
-    const resInp=tr.querySelector(`[data-inn="${innNum}"]`);
-    const exRbi=tr.querySelector(`[data-ex="rbi"][data-exinn="${innNum}"]`);
-    const exR=tr.querySelector(`[data-ex="r"][data-exinn="${innNum}"]`);
-    const exSb=tr.querySelector(`[data-ex="sb"][data-exinn="${innNum}"]`);
+  document.querySelectorAll('#batter-body tr').forEach(srcTr=>{
+    const i=srcTr.id.replace('br','');
+    const isPH=srcTr.classList.contains('ph-row');
+    const nameEl=srcTr.querySelector('[data-f="name"]');
+    const orderEl=srcTr.querySelector('input[type="number"]');
+    const resInp=srcTr.querySelector('[data-inn="'+innNum+'"]');
+    const exRbiEl=srcTr.querySelector('[data-ex="rbi"][data-exinn="'+innNum+'"]');
+    const exREl=srcTr.querySelector('[data-ex="r"][data-exinn="'+innNum+'"]');
+    const exSbEl=srcTr.querySelector('[data-ex="sb"][data-exinn="'+innNum+'"]');
 
-    // 누적 스탯
     const innings={};
-    tr.querySelectorAll('[data-inn]').forEach(inp=>{innings[inp.dataset.inn]=inp.value;});
+    srcTr.querySelectorAll('[data-inn]').forEach(inp=>{innings[inp.dataset.inn]=inp.value;});
     let extraRbi=0,extraR=0,extraSb=0;
-    tr.querySelectorAll('[data-ex]').forEach(inp=>{
+    srcTr.querySelectorAll('[data-ex]').forEach(inp=>{
       const v=+inp.value||0;
       if(inp.dataset.ex==='rbi') extraRbi+=v;
       else if(inp.dataset.ex==='r') extraR+=v;
@@ -843,42 +844,81 @@ function renderInnStepTable(innNum){
     if(extraSb>0) s.sb=extraSb;
     const avg=fmtAvg(s.h,s.ab);
 
-    const orderCell=isPH
-      ?`<td><span class="ph-badge">대타</span></td><td>-</td>`
-      :`<td><button class="btn btn-outline btn-sm" style="font-size:.65rem;padding:1px 5px;" onclick="addPHStepAfter('br${i}')">+대타</button></td><td><input type="number" min="1" max="9" value="${orderEl?.value||''}" style="width:32px" onchange="document.querySelector('#br${i} input[type=number]').value=this.value"></td>`;
-
-    const nameVal=nameEl?.value||'';
-    const resVal=resInp?.value||'';
-    const rbiVal=exRbi||'';
-    const rVal=exR||'';
-    const sbVal=exSb||'';
-
     const newTr=document.createElement('tr');
     if(isPH) newTr.classList.add('ph-row');
-    newTr.innerHTML=`
-      ${orderCell}
-      <td><input type="text" value="${nameVal}" style="min-width:52px" onchange="document.querySelector('#br${i} [data-f=name]').value=this.value;renderInnStepTable(${innNum})"></td>
-      <td><input type="text" value="${resVal}" style="width:72px" placeholder="-"
-        onchange="const orig=document.querySelector('#br${i} [data-inn=\'${innNum}\']');if(orig){orig.value=this.value;calcBatter(${i});}renderInnStepTable(${innNum})">
-        <div class="inn-sub" style="margin-top:2px;">
-          <label style="font-size:.6rem;color:var(--muted)">타</label><input type="number" min="0" max="9" value="${rbiVal}" style="width:22px;font-size:.68rem;text-align:center;border:none;background:rgba(255,255,255,.05);color:var(--gold);border-radius:3px;padding:1px 2px;"
-            onchange="const orig=document.querySelector('#br${i} [data-ex=rbi][data-exinn=\'${innNum}\']');if(orig){orig.value=this.value;calcBatter(${i});}renderInnStepTable(${innNum})">
-          <label style="font-size:.6rem;color:var(--muted)">득</label><input type="number" min="0" max="9" value="${rVal}" style="width:22px;font-size:.68rem;text-align:center;border:none;background:rgba(255,255,255,.05);color:var(--gold);border-radius:3px;padding:1px 2px;"
-            onchange="const orig=document.querySelector('#br${i} [data-ex=r][data-exinn=\'${innNum}\']');if(orig){orig.value=this.value;calcBatter(${i});}renderInnStepTable(${innNum})">
-          <label style="font-size:.6rem;color:var(--muted)">도</label><input type="number" min="0" max="9" value="${sbVal}" style="width:22px;font-size:.68rem;text-align:center;border:none;background:rgba(255,255,255,.05);color:var(--gold);border-radius:3px;padding:1px 2px;"
-            onchange="const orig=document.querySelector('#br${i} [data-ex=sb][data-exinn=\'${innNum}\']');if(orig){orig.value=this.value;calcBatter(${i});}renderInnStepTable(${innNum})">
-        </div>
-      </td>
-      <td style="background:rgba(0,0,0,.3);width:6px;"></td>
-      <td class="step-stat">${s.ab}</td>
-      <td class="step-stat">${s.h}</td>
-      <td class="step-stat">${s.rbi}</td>
-      <td class="step-stat">${s.r}</td>
-      <td class="step-stat">${s.hr}</td>
-      <td class="step-stat">${s.sb}</td>
-      <td class="step-stat">${s.bb}</td>
-      <td class="step-stat">${s.k}</td>
-      <td class="step-stat ${colorAvg(avg)}">${avg}</td>`;
+
+    // +대타 / 타순
+    const phTd=document.createElement('td');
+    if(!isPH){
+      const phBtn=document.createElement('button');
+      phBtn.className='btn btn-outline btn-sm';
+      phBtn.style.cssText='font-size:.62rem;padding:1px 4px;white-space:nowrap;';
+      phBtn.textContent='+대타';
+      phBtn.onclick=()=>{addPHStepAfter('br'+i);};
+      phTd.appendChild(phBtn);
+    }
+    newTr.appendChild(phTd);
+
+    // 타순
+    const orderTd=document.createElement('td');
+    if(isPH){
+      orderTd.innerHTML='<span class="ph-badge">대타</span>';
+    } else {
+      const orderInp=document.createElement('input');
+      orderInp.type='number';orderInp.min=1;orderInp.max=9;
+      orderInp.value=orderEl?.value||'';orderInp.style.width='32px';
+      orderInp.oninput=function(){if(orderEl)orderEl.value=this.value;};
+      orderTd.appendChild(orderInp);
+    }
+    newTr.appendChild(orderTd);
+
+    // 이름
+    const nameTd=document.createElement('td');
+    const nameInp=document.createElement('input');
+    nameInp.type='text';nameInp.value=nameEl?.value||'';nameInp.style.minWidth='52px';
+    nameInp.oninput=function(){if(nameEl)nameEl.value=this.value;};
+    nameTd.appendChild(nameInp);
+    newTr.appendChild(nameTd);
+
+    // 이닝 결과 + 타점/득점/도루
+    const resTd=document.createElement('td');
+    const resInput=document.createElement('input');
+    resInput.type='text';resInput.style.width='72px';resInput.placeholder='-';
+    resInput.value=resInp?.value||'';
+    resInput.oninput=function(){
+      if(resInp){resInp.value=this.value;calcBatter(i);}
+      updateStepStats(newTr,i,s,avg);
+    };
+    resTd.appendChild(resInput);
+
+    const subDiv=document.createElement('div');
+    subDiv.className='inn-sub';subDiv.style.marginTop='2px';
+    [['rbi','타',exRbiEl,extraRbi],['r','득',exREl,extraR],['sb','도',exSbEl,extraSb]].forEach(([f,lbl,origEl,val])=>{
+      const lb=document.createElement('label');lb.textContent=lbl;lb.style.cssText='font-size:.6rem;color:var(--muted);';
+      const inp=document.createElement('input');
+      inp.type='number';inp.min=0;inp.max=9;inp.value=val||'';inp.placeholder='0';
+      inp.style.cssText='width:22px;font-size:.68rem;text-align:center;border:none;background:rgba(255,255,255,.05);color:var(--gold);border-radius:3px;padding:1px 2px;';
+      inp.oninput=function(){if(origEl){origEl.value=this.value;calcBatter(i);}};
+      subDiv.appendChild(lb);subDiv.appendChild(inp);
+    });
+    resTd.appendChild(subDiv);
+    newTr.appendChild(resTd);
+
+    // 구분선
+    const sepTd=document.createElement('td');
+    sepTd.style.cssText='background:rgba(0,0,0,.3);min-width:4px;padding:0;';
+    newTr.appendChild(sepTd);
+
+    // 누적 지표
+    ['ab','h','rbi','r','hr','sb','bb','k'].forEach(k=>{
+      const td=document.createElement('td');
+      td.className='step-stat';td.textContent=s[k]||0;
+      newTr.appendChild(td);
+    });
+    const avgTd=document.createElement('td');
+    avgTd.className='step-stat '+colorAvg(avg);avgTd.textContent=avg;
+    newTr.appendChild(avgTd);
+
     body.appendChild(newTr);
   });
 }
