@@ -330,7 +330,7 @@ textarea{resize:vertical;min-height:70px;}
   <span id="current-league-badge" onclick="document.getElementById('league-overlay').style.display='flex'" style="font-size:.68rem;background:rgba(240,180,41,.15);color:var(--gold);border:1px solid var(--gold);border-radius:4px;padding:3px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="리그 변경"></span>
   <div class="nav-spacer"></div>
   <button onclick="showPage('stats')" style="background:rgba(240,180,41,.1);border:1px solid var(--gold);color:var(--gold);border-radius:6px;padding:5px 12px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:'Noto Sans KR';letter-spacing:.5px;margin-left:6px;">기록</button>
-  <button class="btn btn-gold admin-only" onclick="showPage('form');setTimeout(()=>initForm(),50)" style="font-size:.72rem;padding:4px 10px;white-space:nowrap;flex-shrink:0;margin-left:4px;">새경기</button>
+  <button class="btn btn-gold admin-only" onclick="showPage('form');initForm()" style="font-size:.72rem;padding:4px 10px;white-space:nowrap;flex-shrink:0;margin-left:4px;">새경기</button>
 </nav>
 
 <!-- HOME -->
@@ -603,21 +603,20 @@ async function deleteGame(id){
   catch(e){showToast('삭제 실패: '+e.message,'error');}
 }
 
-function initForm(id=null){
-  editingId=id;
-  const x=id?games.find(g=>g.id===id):null;
-  document.getElementById('f-date').value=x?.date||new Date().toISOString().slice(0,10);
-  document.getElementById('f-season').value=x?.season||new Date().getFullYear();
-  document.getElementById('f-league').value=x?.league||'';
-  document.getElementById('f-place').value=x?.place||'';
-  document.getElementById('f-us').value=x?.us||'블루삭스';
-  document.getElementById('f-them').value=x?.them||'';
-  document.getElementById('f-memo').value=x?.memo||'';
-  document.getElementById('inning-count').value=x?.inningCount||'7';
-  setBatOrder(x?.batorder||'선공');
-  buildInningTable(x?.inningScore||{us:[],them:[]});
-  buildBatterTable(x?.batters||[]);
-  buildPitcherTable(x?.pitchers||[]);
+function initForm(){
+  editingId=null;
+  document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('f-season').value=new Date().getFullYear();
+  document.getElementById('f-league').value='';
+  document.getElementById('f-place').value='';
+  document.getElementById('f-us').value='블루삭스';
+  document.getElementById('f-them').value='';
+  document.getElementById('f-memo').value='';
+  document.getElementById('inning-count').value='7';
+  setBatOrder('선공');
+  buildInningTable({us:[],them:[]});
+  buildBatterTable([]);
+  buildPitcherTable([]);
   switchTabByName('inning');
   currentInnStep=0;
   renderInnStep();
@@ -625,10 +624,31 @@ function initForm(id=null){
 
 function editGame(id){
   if(!isAdmin){showToast('관리자만 수정할 수 있습니다.','error');return;}
+  const g=games.find(x=>x.id===id);
+  if(!g){showToast('경기를 찾을 수 없습니다.','error');return;}
+  // 먼저 폼 페이지 열기
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-form').classList.add('active');
+  // 경기 정보 채우기
   editingId=id;
-  showPage('form');
-  // showPage 후 DOM 준비되면 initForm 실행
-  setTimeout(()=>initForm(id),50);
+  document.getElementById('f-date').value=g.date||new Date().toISOString().slice(0,10);
+  document.getElementById('f-season').value=g.season||new Date().getFullYear();
+  document.getElementById('f-league').value=g.league||'';
+  document.getElementById('f-place').value=g.place||'';
+  document.getElementById('f-us').value=g.us||'블루삭스';
+  document.getElementById('f-them').value=g.them||'';
+  document.getElementById('f-memo').value=g.memo||'';
+  document.getElementById('inning-count').value=g.inningCount||'7';
+  setBatOrder(g.batorder||'선공');
+  buildInningTable(g.inningScore||{us:[],them:[]});
+  // 모든 탭 active로 만들어 DOM 접근 보장
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.add('active'));
+  buildBatterTable(g.batters||[]);
+  buildPitcherTable(g.pitchers||[]);
+  // inning 탭으로 복귀
+  switchTabByName('inning');
+  currentInnStep=0;
+  renderInnStep();
 }
 
 function switchTab(n,btn){
