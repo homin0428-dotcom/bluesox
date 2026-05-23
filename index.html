@@ -330,7 +330,7 @@ textarea{resize:vertical;min-height:70px;}
   <span id="current-league-badge" onclick="document.getElementById('league-overlay').style.display='flex'" style="font-size:.68rem;background:rgba(240,180,41,.15);color:var(--gold);border:1px solid var(--gold);border-radius:4px;padding:3px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0;" title="리그 변경"></span>
   <div class="nav-spacer"></div>
   <button onclick="showPage('stats')" style="background:rgba(240,180,41,.1);border:1px solid var(--gold);color:var(--gold);border-radius:6px;padding:5px 12px;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:'Noto Sans KR';letter-spacing:.5px;margin-left:6px;">기록</button>
-  <button class="btn btn-gold admin-only" onclick="showPage('form');initForm()" style="font-size:.72rem;padding:4px 10px;white-space:nowrap;flex-shrink:0;margin-left:4px;">새경기</button>
+  <button class="btn btn-gold admin-only" onclick="initForm();showPage('form')" style="font-size:.72rem;padding:4px 10px;white-space:nowrap;flex-shrink:0;margin-left:4px;">새경기</button>
 </nav>
 
 <!-- HOME -->
@@ -605,7 +605,7 @@ async function deleteGame(id){
 
 function initForm(id=null){
   editingId=id;
-  const x=id?games.find(g=>g.id===id):{};
+  const x=id?games.find(g=>g.id===id):null;
   document.getElementById('f-date').value=x?.date||new Date().toISOString().slice(0,10);
   document.getElementById('f-season').value=x?.season||new Date().getFullYear();
   document.getElementById('f-league').value=x?.league||'';
@@ -615,15 +615,19 @@ function initForm(id=null){
   document.getElementById('f-memo').value=x?.memo||'';
   document.getElementById('inning-count').value=x?.inningCount||'7';
   setBatOrder(x?.batorder||'선공');
-  switchTabByName('inning');
-  buildInningTable(x?.inningScore);
+  // 모든 탭 패널을 active로 만들어서 DOM 접근 가능하게
+  document.querySelectorAll('.tab-panel').forEach(p=>p.style.display='block');
+  buildInningTable(x?.inningScore||{us:[],them:[]});
   buildBatterTable(x?.batters||[]);
   buildPitcherTable(x?.pitchers||[]);
+  // 다시 정상 탭 상태로
+  document.querySelectorAll('.tab-panel').forEach(p=>p.style.display='');
+  switchTabByName('inning');
   currentInnStep=0;
   renderInnStep();
 }
 
-function editGame(id){editingId=id;showPage('form');initForm(id);}
+function editGame(id){initForm(id);showPage('form');}
 
 function switchTab(n,btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
