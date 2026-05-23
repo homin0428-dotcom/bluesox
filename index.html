@@ -762,7 +762,8 @@ function parsePA(text){
 function sumBatterStats(innings){
   let ab=0,h=0,b2=0,b3=0,hr=0,bb=0,k=0,rbi=0,r=0,sb=0,pa=0,dp=0;
   if(!innings) return {ab,h,b2,b3,hr,bb,k,rbi,r,sb,pa,dp};
-  for(const v of Object.values(innings)){
+  const _innings=Object.fromEntries(Object.entries(innings).map(([k,v])=>[String(k),v]));
+  for(const v of Object.values(_innings)){
     if(!v) continue;
     const p=parsePA(v);
     ab+=p.ab;h+=p.h;b2+=p.b2;b3+=p.b3;hr+=p.hr;
@@ -1099,7 +1100,7 @@ function addBatterRow(data={},afterRowId=null){
       sInp.type='number';sInp.min=0;sInp.max=9;
       sInp.dataset.ex=f;sInp.dataset.exinn=innNum;
       // 저장된 inningExtra 값 복원
-      const _exKey=inningExtra[innNum]||inningExtra[String(innNum)]||{};
+      const _exKey=(inningExtra||{})[String(innNum)]||{};
       sInp.value=_exKey[f]||'';
       sInp.placeholder='0';
       sInp.addEventListener('input',()=>calcBatter(i));
@@ -1260,11 +1261,11 @@ async function saveGame(){
     const posEl=tr.querySelector('select');
     const orderEl=tr.querySelector('input[type="number"]');
     const innings={};
-    tr.querySelectorAll('[data-inn]').forEach(inp=>{innings[inp.dataset.inn]=inp.value;});
+    tr.querySelectorAll('[data-inn]').forEach(inp=>{if(inp.value) innings[String(inp.dataset.inn)]=inp.value;});
     // inningExtra 저장
     const inningExtra={};
     tr.querySelectorAll('[data-ex]').forEach(inp=>{
-      const inn=inp.dataset.exinn;const f=inp.dataset.ex;const v=+inp.value||0;
+      const inn=String(inp.dataset.exinn);const f=inp.dataset.ex;const v=+inp.value||0;
       if(v>0){if(!inningExtra[inn])inningExtra[inn]={};inningExtra[inn][f]=v;}
     });
     const b={isPH,name:nameEl?.value||'',pos:posEl?.value||'',order:isPH?'대타':(orderEl?.value||''),innings,inningExtra};
@@ -1325,7 +1326,7 @@ function showDetail(id){
       ?`<td style="text-align:center"><span style="font-size:.68rem;color:var(--gold);font-weight:700;background:rgba(240,180,41,.15);border:1px solid var(--gold);border-radius:4px;padding:1px 5px;">대타</span></td>`
       :`<td>${b.order||''}</td>`;
     const rowStyle=b.isPH?'background:rgba(240,180,41,0.04);':'';
-    const inningCells=Array.from({length:inningN},(_,idx)=>`<td>${(b.innings||{})[idx+1]||'-'}</td>`).join('');
+    const inningCells=Array.from({length:inningN},(_,idx)=>`<td>${(b.innings||{})[String(idx+1)]||(b.innings||{})[idx+1]||'-'}</td>`).join('');
     const dispRbi=+b.rbi||s.rbi;
     const dispR=+b.r||s.r;
     const dispSb=+b.sb||s.sb;
