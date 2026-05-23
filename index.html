@@ -607,18 +607,23 @@ function initForm(id=null){
   editingId=id;
   const x=id?games.find(g=>g.id===id):{};
   document.getElementById('f-date').value=x?.date||new Date().toISOString().slice(0,10);
+  document.getElementById('f-season').value=x?.season||new Date().getFullYear();
+  document.getElementById('f-league').value=x?.league||'';
   document.getElementById('f-place').value=x?.place||'';
   document.getElementById('f-us').value=x?.us||'블루삭스';
   document.getElementById('f-them').value=x?.them||'';
   document.getElementById('f-memo').value=x?.memo||'';
   document.getElementById('inning-count').value=x?.inningCount||'7';
+  setBatOrder(x?.batorder||'선공');
   switchTabByName('inning');
   buildInningTable(x?.inningScore);
   buildBatterTable(x?.batters||[]);
   buildPitcherTable(x?.pitchers||[]);
+  currentInnStep=0;
+  renderInnStep();
 }
 
-function editGame(id){showPage('form');initForm(id);}
+function editGame(id){editingId=id;showPage('form');initForm(id);}
 
 function switchTab(n,btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -756,6 +761,7 @@ function parsePA(text){
 
 function sumBatterStats(innings){
   let ab=0,h=0,b2=0,b3=0,hr=0,bb=0,k=0,rbi=0,r=0,sb=0,pa=0,dp=0;
+  if(!innings) return {ab,h,b2,b3,hr,bb,k,rbi,r,sb,pa,dp};
   for(const v of Object.values(innings)){
     if(!v) continue;
     const p=parsePA(v);
@@ -1037,6 +1043,7 @@ function addBatterRow(data={},afterRowId=null){
   const isPH=data.isPH||false;
   const pos=['','투수','포수','1루수','2루수','3루수','유격수','좌익수','중견수','우익수','지명타자','외야수'];
   const innings=data.innings||{};
+  const inningExtra=data.inningExtra||{};
 
   const tr=document.createElement('tr');
   tr.id='br'+i;
@@ -1091,7 +1098,10 @@ function addBatterRow(data={},afterRowId=null){
       const sInp=document.createElement('input');
       sInp.type='number';sInp.min=0;sInp.max=9;
       sInp.dataset.ex=f;sInp.dataset.exinn=innNum;
-      sInp.value=ex[f]||'';sInp.placeholder='0';
+      // 저장된 inningExtra 값 복원
+      const _exKey=inningExtra[innNum]||inningExtra[String(innNum)]||{};
+      sInp.value=_exKey[f]||'';
+      sInp.placeholder='0';
       sInp.addEventListener('input',()=>calcBatter(i));
       subDiv.appendChild(lEl);subDiv.appendChild(sInp);
     });
