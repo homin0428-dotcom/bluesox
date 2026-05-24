@@ -643,6 +643,8 @@ function editGame(id){
   buildInningTable(g.inningScore||{us:[],them:[]});
   // 모든 탭 active로 만들어 DOM 접근 보장
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.add('active'));
+  console.log('불러온 batters:', JSON.stringify(g.batters));
+  console.log('불러온 pitchers:', JSON.stringify(g.pitchers));
   buildBatterTable(g.batters||[]);
   buildPitcherTable(g.pitchers||[]);
   // inning 탭으로 복귀
@@ -1281,6 +1283,10 @@ async function saveGame(){
   const us=Array.from({length:n},(_,i)=>document.getElementById('u'+i)?.value||'');
   const them=Array.from({length:n},(_,i)=>document.getElementById('t'+i)?.value||'');
   const batters=[];
+  // batter-step-lineup이 숨겨져 있어도 batter-body 읽기 가능하도록
+  const _lineupDiv=document.getElementById('batter-step-lineup');
+  const _lineupHidden=_lineupDiv&&_lineupDiv.style.display==='none';
+  if(_lineupHidden) _lineupDiv.style.display='';
   document.querySelectorAll('#batter-body tr').forEach(tr=>{
     const isPH=tr.classList.contains('ph-row');
     const nameEl=tr.querySelector('[data-f="name"]');
@@ -1302,6 +1308,7 @@ async function saveGame(){
     Object.assign(b,{ab:s.ab,h:s.h,'2b':s.b2,'3b':s.b3,hr:s.hr,bb:s.bb,k:s.k,pa:s.pa,rbi,r,sb,dp:s.dp||0});
     if(b.name) batters.push(b);
   });
+  if(_lineupHidden) _lineupDiv.style.display='none';
   const pitchers=[];
   document.querySelectorAll('#pitcher-body tr').forEach(tr=>{
     const p={};
@@ -1322,6 +1329,9 @@ async function saveGame(){
     inningCount:n,inningScore:{us,them},batters,pitchers,
     updatedAt:firebase.firestore.FieldValue.serverTimestamp()
   };
+  // 디버그: 실제 저장 데이터 확인
+  console.log('저장 batters:', JSON.stringify(batters));
+  console.log('저장 pitchers:', JSON.stringify(pitchers));
   try{
     setSyncStatus('syncing','저장 중...');
     if(editingId){await db.collection(gamesCollection).doc(editingId).update(game);}
