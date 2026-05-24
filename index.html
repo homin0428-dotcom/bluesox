@@ -788,7 +788,7 @@ function parsePA(text){
 function sumBatterStats(innings){
   let ab=0,h=0,b2=0,b3=0,hr=0,bb=0,k=0,rbi=0,r=0,sb=0,pa=0,dp=0;
   if(!innings) return {ab,h,b2,b3,hr,bb,k,rbi,r,sb,pa,dp};
-  const _innings=Object.fromEntries(Object.entries(innings).map(([k,v])=>[String(k),v]));
+  const _innings=Object.fromEntries(Object.entries(innings||{}).map(([k,v])=>[String(k),v]));
   for(const v of Object.values(_innings)){
     if(!v) continue;
     const p=parsePA(v);
@@ -852,7 +852,7 @@ function renderInnStep(){
 function updateStepRow(displayTr,srcTr,i){
   // 포커스 유지하면서 지표 셀만 업데이트
   const innings={};
-  srcTr.querySelectorAll('[data-inn]').forEach(inp=>{innings[inp.dataset.inn]=inp.value;});
+  srcTr.querySelectorAll('[data-inn]').forEach(inp=>{innings[String(inp.dataset.inn)]=inp.value;});
   let extraRbi=0,extraR=0,extraSb=0;
   srcTr.querySelectorAll('[data-ex]').forEach(inp=>{
     const v=+inp.value||0;
@@ -877,7 +877,7 @@ function updateStepRow(displayTr,srcTr,i){
 function updateStepStatRow(newTr,srcTr,i){
   // 포커스 유지하면서 누적 지표만 업데이트
   const innings={};
-  srcTr.querySelectorAll('[data-inn]').forEach(inp=>{innings[inp.dataset.inn]=inp.value;});
+  srcTr.querySelectorAll('[data-inn]').forEach(inp=>{innings[String(inp.dataset.inn)]=inp.value;});
   let extraRbi=0,extraR=0,extraSb=0;
   srcTr.querySelectorAll('[data-ex]').forEach(inp=>{
     const v=+inp.value||0;
@@ -913,7 +913,7 @@ function renderInnStepTable(innNum){
     const exSbEl=srcTr.querySelector('[data-ex="sb"][data-exinn="'+innNum+'"]');
 
     const innings={};
-    srcTr.querySelectorAll('[data-inn]').forEach(inp=>{innings[inp.dataset.inn]=inp.value;});
+    srcTr.querySelectorAll('[data-inn]').forEach(inp=>{innings[String(inp.dataset.inn)]=inp.value;});
     let extraRbi=0,extraR=0,extraSb=0;
     srcTr.querySelectorAll('[data-ex]').forEach(inp=>{
       const v=+inp.value||0;
@@ -1009,7 +1009,7 @@ function renderInnStepTable(innNum){
 function updateStepRow(stepTr,srcTr,i){
   // 원본 행에서 최신 값 읽어서 지표 셀만 업데이트
   const innings={};
-  srcTr.querySelectorAll('[data-inn]').forEach(inp=>{innings[inp.dataset.inn]=inp.value;});
+  srcTr.querySelectorAll('[data-inn]').forEach(inp=>{innings[String(inp.dataset.inn)]=inp.value;});
   let extraRbi=0,extraR=0,extraSb=0;
   srcTr.querySelectorAll('[data-ex]').forEach(inp=>{
     const v=+inp.value||0;
@@ -1112,14 +1112,14 @@ function addBatterRow(data={},afterRowId=null){
 
     // 타석 결과 입력
     const resInp=document.createElement('input');
-    resInp.type='text';resInp.dataset.inn=innNum;resInp.value=innings[innNum]||'';
+    resInp.type='text';resInp.dataset.inn=innNum;resInp.value=innings[String(innNum)]||innings[innNum]||'';
     resInp.placeholder='-';resInp.className='inn-result';
     resInp.addEventListener('input',()=>calcBatter(i));
     wrap.appendChild(resInp);
 
     // 타점/득점/도루 소형 입력
     const subDiv=document.createElement('div');subDiv.className='inn-sub';
-    const ex=extra[innNum]||{};
+    const ex=extra[String(innNum)]||{};
     [['rbi','타'],['r','득'],['sb','도']].forEach(([f,lbl])=>{
       const lEl=document.createElement('label');lEl.textContent=lbl;
       const sInp=document.createElement('input');
@@ -1287,7 +1287,7 @@ async function saveGame(){
     const posEl=tr.querySelector('select');
     const orderEl=tr.querySelector('input[type="number"]');
     const innings={};
-    tr.querySelectorAll('[data-inn]').forEach(inp=>{if(inp.value) innings[String(inp.dataset.inn)]=inp.value;});
+    tr.querySelectorAll('[data-inn]').forEach(inp=>{innings[String(inp.dataset.inn)]=inp.value||'';});
     // inningExtra 저장
     const inningExtra={};
     tr.querySelectorAll('[data-ex]').forEach(inp=>{
@@ -1352,7 +1352,8 @@ function showDetail(id){
       ?`<td style="text-align:center"><span style="font-size:.68rem;color:var(--gold);font-weight:700;background:rgba(240,180,41,.15);border:1px solid var(--gold);border-radius:4px;padding:1px 5px;">대타</span></td>`
       :`<td>${b.order||''}</td>`;
     const rowStyle=b.isPH?'background:rgba(240,180,41,0.04);':'';
-    const inningCells=Array.from({length:inningN},(_,idx)=>`<td>${(b.innings||{})[String(idx+1)]||(b.innings||{})[idx+1]||'-'}</td>`).join('');
+    const _binn=b.innings||{};
+    const inningCells=Array.from({length:inningN},(_,idx)=>`<td>${_binn[String(idx+1)]||_binn[idx+1]||'-'}</td>`).join('');
     const dispRbi=+b.rbi||s.rbi;
     const dispR=+b.r||s.r;
     const dispSb=+b.sb||s.sb;
